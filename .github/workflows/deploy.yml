@@ -57,6 +57,7 @@ jobs:
           port: ${{ secrets.SERVER_SSH_PORT || 22 }}
           source: 'image.tar'
           target: ${{ env.SERVER_DEPLOY_PATH }}
+          strip_components: 0
 
       # 服务器端部署
       - name: Remote deploy
