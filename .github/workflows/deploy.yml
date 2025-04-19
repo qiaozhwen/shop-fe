@@ -49,7 +49,7 @@ jobs:
 
       # 传输镜像到服务器
       - name: Transfer image to server
-        uses: appleboy/scp-action@v1
+       uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USERNAME }}
@@ -57,11 +57,10 @@ jobs:
           port: ${{ secrets.SERVER_SSH_PORT || 22 }}
           source: 'image.tar'
           target: ${{ env.SERVER_DEPLOY_PATH }}
-          strip_components: 0
 
       # 服务器端部署
       - name: Remote deploy
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USERNAME }}
