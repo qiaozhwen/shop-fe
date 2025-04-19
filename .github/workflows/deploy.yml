@@ -26,12 +26,8 @@ jobs:
           cache: 'npm'
 
       # 安装pnpm
-      - name: Install pnpm
-        run: npm install pnpm -g
-
-      # 安装依赖
       - name: Install dependencies
-        run: pnpm install
+        run: npm install -f
 
       # 项目构建
       - name: Build project
