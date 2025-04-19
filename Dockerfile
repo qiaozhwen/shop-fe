@@ -11,7 +11,9 @@ RUN npm install -f
 COPY . .
 
 # Build the application
-RUN npm run build
+RUN npm run build && \
+    # 清理旧版本文件
+    find /app/dist -name "*.html" -exec sed -i '/\.js\|\.css/s/?v=.*"/?v='$(date +%s)'"/g' {} \; 
 
 # Production stage
 FROM nginx:alpine
