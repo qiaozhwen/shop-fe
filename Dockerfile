@@ -1,33 +1,29 @@
-# 阶段一：依赖安装
-FROM node:18-alpine as deps
+# Build stage
+FROM node:18-alpine as builder
+
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && \
-    npm cache clean --force
 
-# 阶段二：构建
-FROM node:18-alpine as builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Install pnpms
+RUN npm install -f
+
+# Copy source code
 COPY . .
+
+# Build the application
 RUN npm run build
 
-# 阶段三：生产环境
-FROM nginx:1.23-alpine
-WORKDIR /usr/share/nginx/html
+# Production stage
+FROM nginx:alpine
 
-# 删除默认配置
-RUN rm /etc/nginx/conf.d/default.conf
+# Copy the built assets
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-# 复制构建产物
-COPY --from=builder --chown=nginx:nginx /app/dist /usr/share/nginx/html
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# 配置Nginx
-COPY nginx.conf /etc/nginx/conf.d/
-
-# 修正权限
-RUN chmod -R 755 /usr/share/nginx/html && \
-    chown -R nginx:nginx /usr/share/nginx/html
-
+# Expose port 80
 EXPOSE 80
+
+# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]
