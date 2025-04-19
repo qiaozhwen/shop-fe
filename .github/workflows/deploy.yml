@@ -49,7 +49,7 @@ jobs:
 
       # 传输镜像到服务器
       - name: Transfer image to server
-       uses: appleboy/scp-action@v0.1.4
+        uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USERNAME }}
