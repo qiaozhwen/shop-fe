@@ -11,18 +11,20 @@ export default defineConfig({
   },
   routes: [
     {
+      path: '/login',
+      component: './Login',
+      layout: false,
+    },
+    {
       path: '/',
       redirect: '/home',
+      wrappers: ['@/wrappers/auth'],
     },
     {
       name: '首页',
       path: '/home',
       component: './Home',
-    },
-    {
-      name: '权限演示',
-      path: '/access',
-      component: './Access',
+      wrappers: ['@/wrappers/auth'],
     },
     {
       name: ' CRUD 示例',
@@ -32,4 +34,3 @@ export default defineConfig({
   ],
   npmClient: 'pnpm',
 });
-
