@@ -9,6 +9,7 @@ export default defineConfig({
   layout: {
     title: '@umijs/max',
   },
+  esbuildMinifyIIFE: true,
   routes: [
     {
       path: '/login',
