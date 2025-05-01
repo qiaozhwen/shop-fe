@@ -1,6 +1,7 @@
 import { defineConfig } from '@umijs/max';
 
 export default defineConfig({
+  mfsu: false,
   antd: {},
   access: {},
   model: {},
@@ -31,7 +32,18 @@ export default defineConfig({
       name: ' CRUD 示例',
       path: '/table',
       component: './Table',
+      wrappers: ['@/wrappers/auth'],
     },
   ],
   npmClient: 'pnpm',
+  proxy: {
+    '/api': {
+      target:
+        process.env.NODE_ENV === 'development'
+          ? 'http://localhost:3000'
+          : 'http://106.14.227.122:5000',
+      changeOrigin: true,
+      pathRewrite: { '^/api': '' },
+    },
+  },
 });

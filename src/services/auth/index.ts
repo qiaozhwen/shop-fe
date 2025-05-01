@@ -7,11 +7,12 @@ export interface LoginParams {
 
 export interface LoginResult {
   token: string;
+  username: string;
 }
 
 /** 登录接口 */
 export async function login(params: LoginParams) {
-  return request<LoginResult>('/api/login', {
+  return request<LoginResult>('/api/auth/login', {
     method: 'POST',
     data: params,
   });

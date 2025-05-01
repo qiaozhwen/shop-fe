@@ -1,4 +1,6 @@
+import { login } from '@/services/auth';
 import { Button, Form, Input, Layout, message } from 'antd';
+import { useState } from 'react';
 import { history } from 'umi';
 import styles from './index.less';
 
@@ -9,16 +11,20 @@ interface LoginForm {
 
 const LoginPage = () => {
   const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (values: LoginForm) => {
+    setLoading(true);
     try {
-      // TODO: 替换为实际的登录API调用
-      const mockResponse = { token: 'mock-token' };
-      sessionStorage.setItem('token', mockResponse.token);
+      const response: any = await login(values);
+      sessionStorage.setItem('token', response.token);
+      sessionStorage.setItem('username', JSON.stringify(response.user));
       message.success('登录成功');
       history.push('/');
     } catch (error) {
       message.error('登录失败，请重试');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -47,7 +53,7 @@ const LoginPage = () => {
           </Form.Item>
 
           <Form.Item>
-            <Button type="primary" htmlType="submit" block>
+            <Button type="primary" htmlType="submit" block loading={loading}>
               登录
             </Button>
           </Form.Item>
