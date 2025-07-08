@@ -27,15 +27,10 @@ export default defineConfig({
       component: './Home',
     },
     {
-      path: '/table',
-      name: '表格',
-      component: './Table',
-    },
-    {
       path: '/business',
-      name: '业务页面',
+      name: '历史追债', // 修改这里
       component: './Business',
-    },  
+    },
   ],
   npmClient: 'pnpm',
   proxy: {
