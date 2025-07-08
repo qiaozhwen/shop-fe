@@ -20,20 +20,22 @@ export default defineConfig({
     {
       path: '/',
       redirect: '/home',
-      wrappers: ['@/wrappers/auth'],
     },
     {
-      name: '首页',
       path: '/home',
+      name: '首页',
       component: './Home',
-      wrappers: ['@/wrappers/auth'],
     },
     {
-      name: ' CRUD 示例',
       path: '/table',
+      name: '表格',
       component: './Table',
-      wrappers: ['@/wrappers/auth'],
     },
+    {
+      path: '/business',
+      name: '业务页面',
+      component: './Business',
+    },  
   ],
   npmClient: 'pnpm',
   proxy: {

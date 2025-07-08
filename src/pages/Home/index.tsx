@@ -10,7 +10,7 @@ const HomePage: React.FC = () => {
   const { name } = useModel('global');
   useEffect(() => {
     notification.success({
-      message: JSON.parse(sessionStorage.getItem('username')!).name,
+      message: JSON.parse(sessionStorage.getItem('username')!)?.name,
       description: '欢迎回来',
     });
   }, []);
