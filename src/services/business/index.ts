@@ -7,18 +7,18 @@ export interface HistoricalAmount {
 }
 
 export async function queryList() {
-  return request<HistoricalAmount[]>('/api/historical-amount');
+  return request<HistoricalAmount[]>('/api/historicalAmount');
 }
 
 export async function addItem(params: { date: string; amount: number }) {
-  return request('/api/historical-amount', {
+  return request('/api/historicalAmount', {
     method: 'POST',
     data: params,
   });
 }
 
 export async function deleteItem(id: string) {
-  return request(`/api/historical-amount/${id}`, {
+  return request(`/api/historicalAmount/${id}`, {
     method: 'DELETE',
   });
 }
