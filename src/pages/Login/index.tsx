@@ -17,7 +17,7 @@ const LoginPage = () => {
     setLoading(true);
     try {
       const response: any = await login(values);
-      sessionStorage.setItem('token', response.token);
+      sessionStorage.setItem('token', response.access_token);
       sessionStorage.setItem('username', JSON.stringify(response.user));
       message.success('登录成功');
       history.push('/');
