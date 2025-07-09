@@ -98,7 +98,7 @@ const BusinessPage: React.FC = () => {
                     <strong>总计</strong>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={1}>
-                    <strong>{totalAmount.toFixed(2)} 元</strong>
+                    <strong>{totalAmount?.toFixed(2)} 元</strong>
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
               </>
