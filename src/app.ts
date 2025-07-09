@@ -19,6 +19,8 @@ export const layout = () => {
 
 // 请求响应拦截器
 export const request = {
+  timeout: 10000,
+
   requestInterceptors: [
     (url: string, options: any) => {
       const token = sessionStorage.getItem('token');
@@ -32,13 +34,24 @@ export const request = {
     },
   ],
   responseInterceptors: [
-    (response: Response) => {
-      if (response.status === 401) {
-        removeToken(); // 修改对应的工具函数
-        // 修改utils/auth.ts中的实现
-        history.push('/login');
-      }
-      return response;
-    },
+    [
+      (response: any) => {
+        // Intercept successful responses to check for business error codes.
+        const { data } = response as any;
+        if (data?.code === 401) {
+          removeToken();
+          history.push('/login');
+        }
+        return response;
+      },
+      (error: any) => {
+        // Intercept failed responses to handle HTTP errors.
+        if (error.response?.status === 401) {
+          removeToken();
+          history.push('/login');
+        }
+        return Promise.reject(error);
+      },
+    ],
   ],
 };

@@ -1,4 +1,4 @@
-import { request } from 'umi';
+import { request } from '@umijs/max';
 
 export interface HistoricalAmount {
   id: string;

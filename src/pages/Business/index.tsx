@@ -14,7 +14,7 @@ const BusinessPage: React.FC = () => {
   // 修改handleAdd方法
   const handleAdd = async (values: { date: string; amount: number }) => {
     await addItem({
-      date: values.date.format('YYYY-MM-DD'),
+      date: values.date?.format('YYYY-MM-DD'),
       amount: values.amount,
     });
     const newData = await queryList();
@@ -88,7 +88,7 @@ const BusinessPage: React.FC = () => {
           summary={(pageData) => {
             let totalAmount = 0;
             pageData.forEach(({ amount }) => {
-              totalAmount += amount;
+              totalAmount += Number(amount);
             });
 
             return (
