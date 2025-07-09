@@ -19,10 +19,23 @@ export const layout = () => {
 
 // 请求响应拦截器
 export const request = {
+  requestInterceptors: [
+    (url: string, options: any) => {
+      const token = sessionStorage.getItem('token');
+      if (token) {
+        options.headers = {
+          ...options.headers,
+          Authorization: `Bearer ${token}`,
+        };
+      }
+      return { url, options };
+    },
+  ],
   responseInterceptors: [
     (response: Response) => {
       if (response.status === 401) {
-        removeToken();
+        removeToken(); // 修改对应的工具函数
+        // 修改utils/auth.ts中的实现
         history.push('/login');
       }
       return response;
