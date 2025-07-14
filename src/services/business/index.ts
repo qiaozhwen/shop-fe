@@ -10,7 +10,7 @@ export async function queryList() {
   return request<HistoricalAmount[]>('/api/historicalAmount');
 }
 
-export async function addItem(params: { date: string; amount: number }) {
+export async function addItem(params: { date: string; amounts: number[] }) {
   return request('/api/historicalAmount', {
     method: 'POST',
     data: params,

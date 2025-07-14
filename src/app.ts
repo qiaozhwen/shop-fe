@@ -18,6 +18,7 @@ export const layout = () => {
 };
 
 // 请求响应拦截器
+// 在响应拦截器中添加错误处理
 export const request = {
   timeout: 10000,
 
@@ -50,8 +51,9 @@ export const request = {
           removeToken();
           history.push('/login');
         }
+        message.error(error.response?.data?.message || '请求失败');
         return Promise.reject(error);
-      },
-    ],
-  ],
+      }
+    ]
+  ]
 };
