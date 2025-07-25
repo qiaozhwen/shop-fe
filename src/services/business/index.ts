@@ -16,6 +16,12 @@ export async function addItem(params: { date: string; amounts: number[] }) {
     data: params,
   });
 }
+export async function updateItem(id: string, params: { amounts: number[] }) {
+  return request(`/api/historicalAmount/${id}`, {
+    method: 'PATCH',
+    data: params,
+  });
+}
 
 export async function deleteItem(id: string) {
   return request(`/api/historicalAmount/${id}`, {
