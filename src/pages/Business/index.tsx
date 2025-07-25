@@ -1,4 +1,5 @@
 import { addItem, deleteItem, queryList } from '@/services/business';
+import { ProTable } from '@ant-design/pro-components';
 import {
   Button,
   Card,
@@ -8,7 +9,6 @@ import {
   InputNumber,
   message,
   Modal,
-  Table,
   Typography,
 } from 'antd';
 import React, { useEffect, useState } from 'react';
@@ -69,12 +69,23 @@ const BusinessPage: React.FC = () => {
       title: '日期',
       dataIndex: 'date',
       key: 'date',
+      valueType: 'date', // 指定为日期类型
+      search: {
+        transform: (value) => ({ createDate: value.format('YYYY-MM-DD') }),
+      },
+      // 启用排序功能
+      sorter: true, // 简单启用
+      // 或使用自定义排序逻辑
+      sorter: (a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        return dateA - dateB;
+      },
     },
     {
       title: '金额',
       dataIndex: 'amount',
       key: 'amounts',
-      sorter: (a: any, b: any) => a.amount - b.amount,
       render: (text, record) => {
         console.log(text, '111111');
         return (
@@ -88,6 +99,7 @@ const BusinessPage: React.FC = () => {
     },
     {
       title: '操作',
+      search: false,
       render: (_, record) => (
         <Button danger onClick={() => handleDelete(record.id)}>
           删除
@@ -103,6 +115,7 @@ const BusinessPage: React.FC = () => {
   const rowSelection = {
     selectedRowKeys,
     onChange: onSelectChange,
+    alwaysShowAlert: false,
   };
 
   const selectedTotalAmount = dataSource
@@ -122,55 +135,65 @@ const BusinessPage: React.FC = () => {
   return (
     <div className="business-page">
       <Card title="添加新数据">
-        <Form
-          form={form}
-          layout="inline"
-          onFinish={handleAdd}
-          className="add-form"
-        >
-          <Form.Item
-            name="date"
-            label="日期"
-            rules={[{ required: true, message: '请选择日期!' }]}
+        <Flex align="center" gap={15}>
+          <Form
+            form={form}
+            layout="inline"
+            onFinish={handleAdd}
+            className="add-form"
           >
-            <DatePicker format="YYYY-MM-DD" />
-          </Form.Item>
-          <Form.Item
-            name="amounts"
-            label="金额"
-            rules={[{ required: true, message: '请输入金额!' }]}
-          >
-            <InputNumber min={0} style={{ width: '100%' }} addonAfter="元" />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit">
-              添加
-            </Button>
-          </Form.Item>
-        </Form>
+            <Form.Item
+              name="date"
+              label="日期"
+              rules={[{ required: true, message: '请选择日期!' }]}
+            >
+              <DatePicker format="YYYY-MM-DD" />
+            </Form.Item>
+            <Form.Item
+              name="amounts"
+              label="金额"
+              rules={[{ required: true, message: '请输入金额!' }]}
+            >
+              <InputNumber min={0} style={{ width: '100%' }} addonAfter="元" />
+            </Form.Item>
+            <Form.Item>
+              <Button type="primary" htmlType="submit">
+                添加
+              </Button>
+            </Form.Item>
+          </Form>
+          <Flex align="center" gap={15}>
+            <RangePicker
+              onChange={(dates) => {
+                if (dates) {
+                  setDateRange([
+                    dates[0]?.startOf('day'),
+                    dates[1]?.endOf('day'),
+                  ]);
+                } else {
+                  setDateRange(null);
+                }
+              }}
+              style={{ marginBottom: 16 }}
+            />
+            <div style={{ position: 'relative', bottom: 5 }}>
+              <strong>选中总计：{selectedTotalAmount?.toFixed(2)} 元</strong>
+            </div>
+          </Flex>
+        </Flex>
       </Card>
       <Card title="数据列表" style={{ marginTop: 16 }}>
-        <RangePicker
-          onChange={(dates) => {
-            if (dates) {
-              setDateRange([dates[0]?.startOf('day'), dates[1]?.endOf('day')]);
-            } else {
-              setDateRange(null);
-            }
-          }}
-          style={{ marginBottom: 16 }}
-        />
-        <Table
+        <ProTable
           rowSelection={rowSelection}
           dataSource={dataSource}
           columns={columns}
           bordered
           rowKey={'id'}
           pagination={false}
+          scroll={{ y: '60vh' }}
+          search={false}
+          toolBarRender={false}
         />
-        <div style={{ marginTop: 16 }}>
-          <strong>选中总计：{selectedTotalAmount?.toFixed(2)} 元</strong>
-        </div>
       </Card>
     </div>
   );

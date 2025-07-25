@@ -28,7 +28,7 @@ export default defineConfig({
     },
     {
       path: '/business',
-      name: '历史追债', // 修改这里
+      name: '历史成交订单', // 修改这里
       component: './Business',
     },
   ],
