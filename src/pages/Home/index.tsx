@@ -9,10 +9,12 @@ import styles from './index.less';
 const HomePage: React.FC = () => {
   const { name } = useModel('global');
   useEffect(() => {
-    notification.success({
-      message: JSON.parse(sessionStorage.getItem('username')!)?.name,
-      description: '欢迎回来',
-    });
+    if (JSON.parse(sessionStorage.getItem('username')!)?.name) {
+      notification.success({
+        message: JSON.parse(sessionStorage.getItem('username')!)?.name,
+        description: '欢迎回来',
+      });
+    }
   }, []);
   return (
     <PageContainer ghost>
