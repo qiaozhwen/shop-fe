@@ -19,17 +19,45 @@ export default defineConfig({
     },
     {
       path: '/',
-      redirect: '/home',
+      redirect: '/dashboard',
     },
     {
-      path: '/home',
-      name: '首页',
+      name: '仪表盘',
+      path: '/dashboard',
       component: './Home',
     },
     {
-      path: '/business',
-      name: '历史成交订单', // 修改这里
-      component: './Business',
+      name: '商品管理',
+      path: '/product',
+      routes: [
+        {
+          name: '商品列表',
+          path: '/product/list',
+          // component: './Product/List',
+        },
+        {
+          name: '商品分类',
+          path: '/product/category',
+          // component: './Product/Category',
+        },
+      ],
+    },
+    {
+      name: '订单管理',
+      path: '/order',
+      routes: [
+        {
+          path: '/order/business',
+          name: '历史成交订单', // 修改这里
+          component: './Business',
+        },
+      ],
+      // component: './Order',
+    },
+    {
+      name: '会员管理',
+      path: '/member',
+      // component: './Member',
     },
   ],
   npmClient: 'pnpm',

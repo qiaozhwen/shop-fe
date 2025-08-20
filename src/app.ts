@@ -1,5 +1,6 @@
 // 运行时配置
 import { removeToken } from '@/utils/auth';
+import { message } from 'antd';
 import { history } from 'umi';
 
 // 全局初始化数据配置，用于 Layout 用户信息和权限初始化
@@ -53,7 +54,7 @@ export const request = {
         }
         message.error(error.response?.data?.message || '请求失败');
         return Promise.reject(error);
-      }
-    ]
-  ]
+      },
+    ],
+  ],
 };
