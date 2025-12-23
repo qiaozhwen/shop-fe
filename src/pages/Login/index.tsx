@@ -97,29 +97,29 @@ const LoginPage = () => {
             <Text type="secondary">请输入您的账号信息</Text>
           </div>
 
-          <Form
-            form={form}
-            name="login"
-            onFinish={handleSubmit}
-            autoComplete="off"
+        <Form
+          form={form}
+          name="login"
+          onFinish={handleSubmit}
+          autoComplete="off"
             size="large"
             className={styles.loginForm}
+        >
+          <Form.Item
+            name="username"
+            rules={[{ required: true, message: '请输入用户名' }]}
           >
-            <Form.Item
-              name="username"
-              rules={[{ required: true, message: '请输入用户名' }]}
-            >
               <Input
                 prefix={<UserOutlined className={styles.inputIcon} />}
                 placeholder="用户名"
                 className={styles.input}
               />
-            </Form.Item>
+          </Form.Item>
 
-            <Form.Item
-              name="password"
-              rules={[{ required: true, message: '请输入密码' }]}
-            >
+          <Form.Item
+            name="password"
+            rules={[{ required: true, message: '请输入密码' }]}
+          >
               <Input.Password
                 prefix={<LockOutlined className={styles.inputIcon} />}
                 placeholder="密码"
@@ -134,9 +134,9 @@ const LoginPage = () => {
                 </Form.Item>
                 <a className={styles.forgotLink}>忘记密码？</a>
               </div>
-            </Form.Item>
+          </Form.Item>
 
-            <Form.Item>
+          <Form.Item>
               <Button
                 type="primary"
                 htmlType="submit"
@@ -145,9 +145,9 @@ const LoginPage = () => {
                 className={styles.submitBtn}
               >
                 登 录
-              </Button>
-            </Form.Item>
-          </Form>
+            </Button>
+          </Form.Item>
+        </Form>
 
           <div className={styles.demoAccount}>
             <SafetyOutlined />

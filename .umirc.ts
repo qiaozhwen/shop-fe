@@ -171,8 +171,8 @@ export default defineConfig({
           name: '员工管理',
           path: '/system/staff',
           component: './System/Staff',
-        },
-        {
+    },
+    {
           name: '系统日志',
           path: '/system/logs',
           component: './System/Logs',
