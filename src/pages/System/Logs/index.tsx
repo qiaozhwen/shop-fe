@@ -27,139 +27,63 @@ import {
   Timeline,
   Typography,
 } from 'antd';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { systemLogApi, SystemLog } from '@/services/api';
 import styles from './index.less';
 
 const { Text, Title } = Typography;
 const { RangePicker } = DatePicker;
 
-interface LogItem {
-  id: string;
-  time: string;
-  type: 'login' | 'operation' | 'system' | 'error';
-  level: 'info' | 'warning' | 'error';
-  user: string;
-  action: string;
-  module: string;
-  ip: string;
+interface LogItem extends SystemLog {
+  type?: string;
+  level?: string;
+  user?: string;
+  time?: string;
   detail?: string;
 }
-
-const mockLogs: LogItem[] = [
-  {
-    id: '1',
-    time: '2023-12-23 10:30:15',
-    type: 'operation',
-    level: 'info',
-    user: '张三',
-    action: '创建销售订单',
-    module: '订单管理',
-    ip: '192.168.1.100',
-    detail: '订单号: ORD202312230001，金额: ¥1575',
-  },
-  {
-    id: '2',
-    time: '2023-12-23 10:25:00',
-    type: 'operation',
-    level: 'info',
-    user: '李四',
-    action: '入库操作',
-    module: '库存管理',
-    ip: '192.168.1.101',
-    detail: '入库单号: IN202312230001，数量: 120只',
-  },
-  {
-    id: '3',
-    time: '2023-12-23 10:00:00',
-    type: 'login',
-    level: 'info',
-    user: '张总',
-    action: '用户登录',
-    module: '系统',
-    ip: '192.168.1.1',
-  },
-  {
-    id: '4',
-    time: '2023-12-23 09:45:30',
-    type: 'operation',
-    level: 'warning',
-    user: '王五',
-    action: '库存预警触发',
-    module: '库存管理',
-    ip: '系统',
-    detail: '麻鸭库存不足，当前: 18只，预警线: 30只',
-  },
-  {
-    id: '5',
-    time: '2023-12-23 09:30:00',
-    type: 'login',
-    level: 'info',
-    user: '张三',
-    action: '用户登录',
-    module: '系统',
-    ip: '192.168.1.100',
-  },
-  {
-    id: '6',
-    time: '2023-12-23 09:00:00',
-    type: 'system',
-    level: 'info',
-    user: '系统',
-    action: '定时任务执行',
-    module: '系统',
-    ip: '127.0.0.1',
-    detail: '库存预警检查完成',
-  },
-  {
-    id: '7',
-    time: '2023-12-23 08:30:00',
-    type: 'error',
-    level: 'error',
-    user: '系统',
-    action: '打印服务异常',
-    module: '系统',
-    ip: '127.0.0.1',
-    detail: '打印机连接失败，请检查设备状态',
-  },
-  {
-    id: '8',
-    time: '2023-12-22 18:00:00',
-    type: 'operation',
-    level: 'info',
-    user: '赵六',
-    action: '财务结算',
-    module: '财务管理',
-    ip: '192.168.1.102',
-    detail: '日结金额: ¥35,800',
-  },
-  {
-    id: '9',
-    time: '2023-12-22 17:30:00',
-    type: 'operation',
-    level: 'info',
-    user: '张三',
-    action: '修改商品信息',
-    module: '商品管理',
-    ip: '192.168.1.100',
-    detail: '修改商品: 散养土鸡，价格: ¥45 → ¥48',
-  },
-  {
-    id: '10',
-    time: '2023-12-22 16:00:00',
-    type: 'login',
-    level: 'warning',
-    user: '未知',
-    action: '登录失败',
-    module: '系统',
-    ip: '192.168.1.200',
-    detail: '密码错误，尝试用户: admin',
-  },
-];
 
 const SystemLogsPage: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [detailVisible, setDetailVisible] = useState(false);
   const [currentLog, setCurrentLog] = useState<LogItem | null>(null);
+  const [logs, setLogs] = useState<LogItem[]>([]);
+  const [statistics, setStatistics] = useState<any>({ total: 0, login: 0, operation: 0, error: 0 });
+  const [loading, setLoading] = useState(false);
+
+  const fetchLogs = async (params?: any) => {
+    setLoading(true);
+    try {
+      const result = await systemLogApi.getAll(params);
+      const logList = (result?.list || []).map((log: SystemLog) => ({
+        ...log,
+        time: log.createdAt,
+        user: log.staffName || '系统',
+        detail: log.content,
+        type: log.module === '系统' ? 'system' : log.action?.includes('登录') ? 'login' : 'operation',
+        level: 'info',
+      }));
+      setLogs(logList);
+      return { data: logList, success: true, total: result?.total || 0 };
+    } catch (error) {
+      console.error('获取日志失败:', error);
+      return { data: [], success: false, total: 0 };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStatistics = async () => {
+    try {
+      const stats = await systemLogApi.getStatistics();
+      setStatistics(stats || { total: 0, login: 0, operation: 0, error: 0 });
+    } catch (error) {
+      console.error('获取统计数据失败:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchStatistics();
+  }, []);
 
   const handleView = (record: LogItem) => {
     setCurrentLog(record);
@@ -170,9 +94,16 @@ const SystemLogsPage: React.FC = () => {
     Modal.confirm({
       title: '清空日志',
       icon: <ExclamationCircleOutlined />,
-      content: '确定要清空所有日志吗？此操作不可恢复。',
-      onOk: () => {
-        message.success('日志已清空');
+      content: '确定要清空30天前的日志吗？此操作不可恢复。',
+      onOk: async () => {
+        try {
+          await systemLogApi.clean(30);
+          message.success('日志已清空');
+          actionRef.current?.reload();
+          fetchStatistics();
+        } catch (error) {
+          message.error('清空日志失败');
+        }
       },
     });
   };
@@ -193,8 +124,8 @@ const SystemLogsPage: React.FC = () => {
   const columns: ProColumns<LogItem>[] = [
     {
       title: '时间',
-      dataIndex: 'time',
-      key: 'time',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
       width: 160,
       valueType: 'dateTime',
     },
@@ -211,7 +142,7 @@ const SystemLogsPage: React.FC = () => {
         error: { text: '错误' },
       },
       render: (_, record) => (
-        <Tag color={typeMap[record.type]?.color}>{typeMap[record.type]?.text}</Tag>
+        <Tag color={typeMap[record.type || 'operation']?.color}>{typeMap[record.type || 'operation']?.text}</Tag>
       ),
     },
     {
@@ -226,14 +157,15 @@ const SystemLogsPage: React.FC = () => {
         error: { text: '错误', status: 'Error' },
       },
       render: (_, record) => (
-        <Badge status={levelMap[record.level]?.status} text={record.level === 'info' ? '信息' : record.level === 'warning' ? '警告' : '错误'} />
+        <Badge status={levelMap[record.level || 'info']?.status} text={record.level === 'error' ? '错误' : record.level === 'warning' ? '警告' : '信息'} />
       ),
     },
     {
       title: '用户',
-      dataIndex: 'user',
-      key: 'user',
+      dataIndex: 'staffName',
+      key: 'staffName',
       width: 80,
+      render: (_, record) => record.staffName || '系统',
     },
     {
       title: '操作',
@@ -251,11 +183,11 @@ const SystemLogsPage: React.FC = () => {
     },
     {
       title: '详情',
-      dataIndex: 'detail',
-      key: 'detail',
+      dataIndex: 'content',
+      key: 'content',
       ellipsis: true,
       search: false,
-      render: (detail) => detail || '-',
+      render: (content) => content || '-',
     },
     {
       title: 'IP地址',
@@ -266,7 +198,7 @@ const SystemLogsPage: React.FC = () => {
     },
     {
       title: '操作',
-      key: 'action',
+      key: 'actions',
       width: 80,
       search: false,
       render: (_, record) => (
@@ -278,13 +210,7 @@ const SystemLogsPage: React.FC = () => {
   ];
 
   // 统计数据
-  const todayLogs = mockLogs.filter((l) => l.time.startsWith('2023-12-23'));
-  const stats = {
-    total: todayLogs.length,
-    login: todayLogs.filter((l) => l.type === 'login').length,
-    operation: todayLogs.filter((l) => l.type === 'operation').length,
-    error: todayLogs.filter((l) => l.level === 'error').length,
-  };
+  const stats = statistics;
 
   return (
     <PageContainer
@@ -322,6 +248,7 @@ const SystemLogsPage: React.FC = () => {
           headerTitle="日志列表"
           actionRef={actionRef}
           rowKey="id"
+          loading={loading}
           search={{
             labelWidth: 'auto',
           }}
@@ -337,21 +264,17 @@ const SystemLogsPage: React.FC = () => {
             </Button>,
           ]}
           request={async (params) => {
-            let data = [...mockLogs];
-            if (params.type) {
-              data = data.filter((l) => l.type === params.type);
-            }
-            if (params.level) {
-              data = data.filter((l) => l.level === params.level);
-            }
-            if (params.user) {
-              data = data.filter((l) => l.user.includes(params.user));
-            }
-            return {
-              data,
-              success: true,
-              total: data.length,
+            const query: any = {
+              page: params.current,
+              pageSize: params.pageSize,
             };
+            if (params.module) {
+              query.module = params.module;
+            }
+            if (params.action) {
+              query.action = params.action;
+            }
+            return fetchLogs(query);
           }}
           columns={columns}
           pagination={{
@@ -375,22 +298,22 @@ const SystemLogsPage: React.FC = () => {
               <Col span={12}>
                 <Text type="secondary">时间</Text>
                 <br />
-                <Text strong>{currentLog.time}</Text>
+                <Text strong>{currentLog.createdAt}</Text>
               </Col>
               <Col span={12}>
                 <Text type="secondary">类型</Text>
                 <br />
-                <Tag color={typeMap[currentLog.type]?.color}>{typeMap[currentLog.type]?.text}</Tag>
+                <Tag color={typeMap[currentLog.type || 'operation']?.color}>{typeMap[currentLog.type || 'operation']?.text}</Tag>
               </Col>
               <Col span={12}>
                 <Text type="secondary">级别</Text>
                 <br />
-                <Badge status={levelMap[currentLog.level]?.status} text={currentLog.level === 'info' ? '信息' : currentLog.level === 'warning' ? '警告' : '错误'} />
+                <Badge status={levelMap[currentLog.level || 'info']?.status} text={currentLog.level === 'error' ? '错误' : currentLog.level === 'warning' ? '警告' : '信息'} />
               </Col>
               <Col span={12}>
                 <Text type="secondary">用户</Text>
                 <br />
-                <Text strong>{currentLog.user}</Text>
+                <Text strong>{currentLog.staffName || '系统'}</Text>
               </Col>
               <Col span={24}>
                 <Text type="secondary">操作</Text>
@@ -405,14 +328,14 @@ const SystemLogsPage: React.FC = () => {
               <Col span={12}>
                 <Text type="secondary">IP地址</Text>
                 <br />
-                <Text>{currentLog.ip}</Text>
+                <Text>{currentLog.ip || '-'}</Text>
               </Col>
-              {currentLog.detail && (
+              {currentLog.content && (
                 <Col span={24}>
                   <Text type="secondary">详情</Text>
                   <br />
                   <div className={styles.detailBox}>
-                    <Text>{currentLog.detail}</Text>
+                    <Text>{currentLog.content}</Text>
                   </div>
                 </Col>
               )}

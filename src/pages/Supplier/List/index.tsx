@@ -17,145 +17,24 @@ import {
   Divider,
   Form,
   Input,
+  InputNumber,
   message,
   Modal,
   Popconfirm,
   Rate,
   Row,
-  Select,
   Space,
   Statistic,
   Switch,
-  Table,
   Tag,
   Typography,
 } from 'antd';
 import React, { useRef, useState } from 'react';
+import { supplierApi, Supplier } from '@/services/api';
 import styles from './index.less';
 
 const { Text, Title } = Typography;
 const { TextArea } = Input;
-
-interface Supplier {
-  id: string;
-  name: string;
-  contactPerson: string;
-  phone: string;
-  address: string;
-  category: string[];
-  rating: number;
-  totalPurchases: number;
-  totalAmount: number;
-  lastPurchaseDate: string;
-  deliveryDays: number;
-  status: boolean;
-  remark?: string;
-  createdAt: string;
-}
-
-const mockSuppliers: Supplier[] = [
-  {
-    id: 'S001',
-    name: '盐城绿源农场',
-    contactPerson: '孙总',
-    phone: '13800138101',
-    address: '江苏省盐城市亭湖区绿源路88号',
-    category: ['土鸡', '乌鸡'],
-    rating: 5,
-    totalPurchases: 85,
-    totalAmount: 186500,
-    lastPurchaseDate: '2023-12-23',
-    deliveryDays: 1,
-    status: true,
-    remark: '优质供应商，货源稳定',
-    createdAt: '2022-01-15',
-  },
-  {
-    id: 'S002',
-    name: '清远鸡业有限公司',
-    contactPerson: '陈经理',
-    phone: '13800138102',
-    address: '广东省清远市清城区鸡业大道168号',
-    category: ['三黄鸡'],
-    rating: 4,
-    totalPurchases: 62,
-    totalAmount: 125800,
-    lastPurchaseDate: '2023-12-22',
-    deliveryDays: 2,
-    status: true,
-    createdAt: '2022-03-20',
-  },
-  {
-    id: 'S003',
-    name: '金华鸽业有限公司',
-    contactPerson: '王总',
-    phone: '13800138103',
-    address: '浙江省金华市婺城区鸽业路66号',
-    category: ['肉鸽'],
-    rating: 5,
-    totalPurchases: 48,
-    totalAmount: 96800,
-    lastPurchaseDate: '2023-12-21',
-    deliveryDays: 1,
-    status: true,
-    createdAt: '2022-05-10',
-  },
-  {
-    id: 'S004',
-    name: '高邮鸭业养殖合作社',
-    contactPerson: '张老板',
-    phone: '13800138104',
-    address: '江苏省高邮市高邮镇鸭业路100号',
-    category: ['麻鸭', '番鸭'],
-    rating: 4,
-    totalPurchases: 55,
-    totalAmount: 88600,
-    lastPurchaseDate: '2023-12-20',
-    deliveryDays: 1,
-    status: true,
-    createdAt: '2022-06-15',
-  },
-  {
-    id: 'S005',
-    name: '皖西白鹅养殖场',
-    contactPerson: '李师傅',
-    phone: '13800138105',
-    address: '安徽省六安市裕安区白鹅路200号',
-    category: ['大白鹅'],
-    rating: 5,
-    totalPurchases: 32,
-    totalAmount: 128000,
-    lastPurchaseDate: '2023-12-19',
-    deliveryDays: 2,
-    status: true,
-    createdAt: '2022-08-20',
-  },
-  {
-    id: 'S006',
-    name: '泰和乌鸡养殖场',
-    contactPerson: '赵经理',
-    phone: '13800138106',
-    address: '江西省吉安市泰和县乌鸡路88号',
-    category: ['乌鸡'],
-    rating: 4,
-    totalPurchases: 28,
-    totalAmount: 58800,
-    lastPurchaseDate: '2023-12-18',
-    deliveryDays: 2,
-    status: true,
-    createdAt: '2023-01-10',
-  },
-];
-
-const categoryOptions = [
-  { value: '土鸡', label: '土鸡' },
-  { value: '三黄鸡', label: '三黄鸡' },
-  { value: '乌鸡', label: '乌鸡' },
-  { value: '麻鸭', label: '麻鸭' },
-  { value: '番鸭', label: '番鸭' },
-  { value: '肉鸽', label: '肉鸽' },
-  { value: '大白鹅', label: '大白鹅' },
-];
 
 const SupplierListPage: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -163,6 +42,7 @@ const SupplierListPage: React.FC = () => {
   const [detailVisible, setDetailVisible] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [currentSupplier, setCurrentSupplier] = useState<Supplier | null>(null);
+  const [stats, setStats] = useState({ total: 0, active: 0, totalAmount: 0, avgRating: 0 });
   const [form] = Form.useForm();
 
   const handleAdd = () => {
@@ -173,7 +53,10 @@ const SupplierListPage: React.FC = () => {
 
   const handleEdit = (record: Supplier) => {
     setEditingSupplier(record);
-    form.setFieldsValue(record);
+    form.setFieldsValue({
+      ...record,
+      status: record.status,
+    });
     setModalVisible(true);
   };
 
@@ -182,23 +65,35 @@ const SupplierListPage: React.FC = () => {
     setDetailVisible(true);
   };
 
-  const handleDelete = (id: string) => {
-    message.success('删除成功');
-    actionRef.current?.reload();
+  const handleDelete = async (id: number) => {
+    try {
+      await supplierApi.delete(id);
+      message.success('删除成功');
+      actionRef.current?.reload();
+    } catch (error) {
+      message.error('删除失败');
+    }
   };
 
   const handleSubmit = async () => {
     try {
-      await form.validateFields();
+      const values = await form.validateFields();
+      const data = {
+        ...values,
+        status: values.status ?? true,
+      };
+      
       if (editingSupplier) {
+        await supplierApi.update(editingSupplier.id, data);
         message.success('更新成功');
       } else {
+        await supplierApi.create(data);
         message.success('添加成功');
       }
       setModalVisible(false);
       actionRef.current?.reload();
     } catch (error) {
-      console.error('验证失败:', error);
+      console.error('操作失败:', error);
     }
   };
 
@@ -213,60 +108,38 @@ const SupplierListPage: React.FC = () => {
           <div className={styles.supplierMeta}>
             <Text strong style={{ fontSize: 15 }}>{record.name}</Text>
             <Space size={4}>
-              <Rate disabled value={record.rating} style={{ fontSize: 12 }} />
-              <Text type="secondary" style={{ fontSize: 12 }}>({record.rating}分)</Text>
+              <Rate disabled value={record.rating || 0} style={{ fontSize: 12 }} />
+              <Text type="secondary" style={{ fontSize: 12 }}>({record.rating || 0}分)</Text>
             </Space>
-            <Text type="secondary">{record.contactPerson} · {record.phone}</Text>
+            <Text type="secondary">{record.contactName} · {record.phone}</Text>
           </div>
         </div>
       ),
     },
     {
       title: '供货品类',
-      dataIndex: 'category',
-      key: 'category',
+      dataIndex: 'supplyProducts',
+      key: 'supplyProducts',
       width: 180,
       search: false,
-      render: (_, record) => (
-        <Space size={4} wrap>
-          {record.category.map((cat) => (
-            <Tag key={cat} color="blue">{cat}</Tag>
-          ))}
-        </Space>
-      ),
+      render: (text) => text || '-',
     },
     {
       title: '累计采购',
-      dataIndex: 'totalPurchases',
-      key: 'totalPurchases',
-      width: 100,
-      search: false,
-      sorter: true,
-      render: (purchases) => `${purchases}次`,
-    },
-    {
-      title: '采购金额',
-      dataIndex: 'totalAmount',
-      key: 'totalAmount',
+      dataIndex: 'totalPurchase',
+      key: 'totalPurchase',
       width: 120,
       search: false,
       sorter: true,
-      render: (amount) => <Text strong style={{ color: '#52c41a' }}>¥{amount?.toLocaleString()}</Text>,
+      render: (amount) => <Text strong style={{ color: '#52c41a' }}>¥{(amount || 0).toLocaleString()}</Text>,
     },
     {
-      title: '供货周期',
-      dataIndex: 'deliveryDays',
-      key: 'deliveryDays',
-      width: 100,
+      title: '未付金额',
+      dataIndex: 'unpaidAmount',
+      key: 'unpaidAmount',
+      width: 120,
       search: false,
-      render: (days) => `${days}天`,
-    },
-    {
-      title: '最近采购',
-      dataIndex: 'lastPurchaseDate',
-      key: 'lastPurchaseDate',
-      width: 110,
-      search: false,
+      render: (amount) => <Text strong style={{ color: amount > 0 ? '#ff4d4f' : '#52c41a' }}>¥{(amount || 0).toLocaleString()}</Text>,
     },
     {
       title: '状态',
@@ -279,11 +152,9 @@ const SupplierListPage: React.FC = () => {
         false: { text: '已停用', status: 'Default' },
       },
       render: (_, record) => (
-        <Switch
-          checked={record.status}
-          size="small"
-          onChange={(checked) => message.success(checked ? '已启用' : '已停用')}
-        />
+        <Tag color={record.status ? 'success' : 'default'}>
+          {record.status ? '合作中' : '已停用'}
+        </Tag>
       ),
     },
     {
@@ -308,13 +179,6 @@ const SupplierListPage: React.FC = () => {
       ),
     },
   ];
-
-  const stats = {
-    total: mockSuppliers.length,
-    active: mockSuppliers.filter((s) => s.status).length,
-    totalAmount: mockSuppliers.reduce((sum, s) => sum + s.totalAmount, 0),
-    avgRating: (mockSuppliers.reduce((sum, s) => sum + s.rating, 0) / mockSuppliers.length).toFixed(1),
-  };
 
   return (
     <PageContainer
@@ -359,11 +223,30 @@ const SupplierListPage: React.FC = () => {
               新增供应商
             </Button>,
           ]}
-          request={async () => ({
-            data: mockSuppliers,
-            success: true,
-            total: mockSuppliers.length,
-          })}
+          request={async (params) => {
+            try {
+              const res = await supplierApi.getAll({
+                page: params.current,
+                pageSize: params.pageSize,
+                keyword: params.name,
+              });
+              // 更新统计
+              const list = res.list || [];
+              setStats({
+                total: res.total || 0,
+                active: list.filter((s: Supplier) => s.status).length,
+                totalAmount: list.reduce((sum: number, s: Supplier) => sum + (s.totalPurchase || 0), 0),
+                avgRating: list.length > 0 ? list.reduce((sum: number, s: Supplier) => sum + (s.rating || 0), 0) / list.length : 0,
+              });
+              return {
+                data: list,
+                success: true,
+                total: res.total || 0,
+              };
+            } catch (error) {
+              return { data: [], success: false, total: 0 };
+            }
+          }}
           columns={columns}
           pagination={{
             pageSize: 10,
@@ -392,22 +275,14 @@ const SupplierListPage: React.FC = () => {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item
-                name="category"
-                label="供货品类"
-                rules={[{ required: true, message: '请选择供货品类' }]}
-              >
-                <Select mode="multiple" options={categoryOptions} placeholder="请选择" />
+              <Form.Item name="supplyProducts" label="供货品类">
+                <Input placeholder="如：土鸡、乌鸡" />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item
-                name="contactPerson"
-                label="联系人"
-                rules={[{ required: true, message: '请输入联系人' }]}
-              >
+              <Form.Item name="contactName" label="联系人">
                 <Input placeholder="请输入联系人" />
               </Form.Item>
             </Col>
@@ -426,13 +301,25 @@ const SupplierListPage: React.FC = () => {
           </Form.Item>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="deliveryDays" label="供货周期(天)">
-                <Input type="number" placeholder="如：1" />
+              <Form.Item name="bankName" label="开户银行">
+                <Input placeholder="请输入开户银行" />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="rating" label="评分">
+              <Form.Item name="bankAccount" label="银行账号">
+                <Input placeholder="请输入银行账号" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="rating" label="评分" initialValue={5}>
                 <Rate />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="status" label="状态" valuePropName="checked" initialValue={true}>
+                <Switch checkedChildren="合作中" unCheckedChildren="已停用" />
               </Form.Item>
             </Col>
           </Row>
@@ -456,33 +343,33 @@ const SupplierListPage: React.FC = () => {
               <Avatar size={64} style={{ backgroundColor: '#52c41a' }} icon={<ShopOutlined />} />
               <div className={styles.headerInfo}>
                 <Title level={4} style={{ marginBottom: 4 }}>{currentSupplier.name}</Title>
-                <Rate disabled value={currentSupplier.rating} />
-                <Text type="secondary" style={{ marginLeft: 8 }}>({currentSupplier.rating}分)</Text>
+                <Rate disabled value={currentSupplier.rating || 0} />
+                <Text type="secondary" style={{ marginLeft: 8 }}>({currentSupplier.rating || 0}分)</Text>
               </div>
             </div>
             <Divider />
             <Descriptions bordered size="small" column={2}>
-              <Descriptions.Item label="联系人">{currentSupplier.contactPerson}</Descriptions.Item>
+              <Descriptions.Item label="联系人">{currentSupplier.contactName || '-'}</Descriptions.Item>
               <Descriptions.Item label="联系电话">
                 <PhoneOutlined /> {currentSupplier.phone}
               </Descriptions.Item>
               <Descriptions.Item label="地址" span={2}>
-                <EnvironmentOutlined /> {currentSupplier.address}
+                <EnvironmentOutlined /> {currentSupplier.address || '-'}
               </Descriptions.Item>
               <Descriptions.Item label="供货品类" span={2}>
-                <Space size={4}>
-                  {currentSupplier.category.map((cat) => (
-                    <Tag key={cat} color="blue">{cat}</Tag>
-                  ))}
-                </Space>
+                {currentSupplier.supplyProducts || '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="累计采购">{currentSupplier.totalPurchases}次</Descriptions.Item>
-              <Descriptions.Item label="采购金额">
-                <Text strong style={{ color: '#52c41a' }}>¥{currentSupplier.totalAmount.toLocaleString()}</Text>
+              <Descriptions.Item label="累计采购">
+                <Text strong style={{ color: '#52c41a' }}>¥{(currentSupplier.totalPurchase || 0).toLocaleString()}</Text>
               </Descriptions.Item>
-              <Descriptions.Item label="供货周期">{currentSupplier.deliveryDays}天</Descriptions.Item>
-              <Descriptions.Item label="最近采购">{currentSupplier.lastPurchaseDate}</Descriptions.Item>
-              <Descriptions.Item label="合作时间" span={2}>{currentSupplier.createdAt}</Descriptions.Item>
+              <Descriptions.Item label="未付金额">
+                <Text strong style={{ color: (currentSupplier.unpaidAmount || 0) > 0 ? '#ff4d4f' : '#52c41a' }}>
+                  ¥{(currentSupplier.unpaidAmount || 0).toLocaleString()}
+                </Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="开户银行">{currentSupplier.bankName || '-'}</Descriptions.Item>
+              <Descriptions.Item label="银行账号">{currentSupplier.bankAccount || '-'}</Descriptions.Item>
+              <Descriptions.Item label="创建时间" span={2}>{currentSupplier.createdAt}</Descriptions.Item>
               {currentSupplier.remark && (
                 <Descriptions.Item label="备注" span={2}>{currentSupplier.remark}</Descriptions.Item>
               )}

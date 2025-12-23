@@ -17,6 +17,7 @@ import {
   Row,
   Select,
   Space,
+  Spin,
   Statistic,
   Table,
   Tabs,
@@ -24,70 +25,103 @@ import {
   Typography,
 } from 'antd';
 import dayjs from 'dayjs';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { orderApi, dashboardApi, customerApi } from '@/services/api';
 import styles from './index.less';
 
 const { Text, Title } = Typography;
 const { RangePicker } = DatePicker;
 
-// 销售趋势数据
-const salesTrend = [
-  { date: '12-17', sales: 28500, orders: 45, avgPrice: 633 },
-  { date: '12-18', sales: 32100, orders: 52, avgPrice: 617 },
-  { date: '12-19', sales: 25800, orders: 41, avgPrice: 629 },
-  { date: '12-20', sales: 38600, orders: 62, avgPrice: 623 },
-  { date: '12-21', sales: 35200, orders: 58, avgPrice: 607 },
-  { date: '12-22', sales: 42500, orders: 68, avgPrice: 625 },
-  { date: '12-23', sales: 15625, orders: 25, avgPrice: 625 },
-];
-
-// 品类销售数据
-const categorySales = [
-  { category: '鸡类', sales: 85600, quantity: 2150, percentage: 48 },
-  { category: '鸭类', sales: 42300, quantity: 1120, percentage: 24 },
-  { category: '鸽类', sales: 28500, quantity: 680, percentage: 16 },
-  { category: '鹅类', sales: 21500, quantity: 180, percentage: 12 },
-];
-
-// 商品销量排行
-const productRanking = [
-  { rank: 1, name: '散养土鸡', category: '鸡类', quantity: 856, amount: 38520, growth: 12.5 },
-  { rank: 2, name: '三黄鸡', category: '鸡类', quantity: 720, amount: 25200, growth: 8.3 },
-  { rank: 3, name: '麻鸭', category: '鸭类', quantity: 580, amount: 22040, growth: -5.2 },
-  { rank: 4, name: '肉鸽', category: '鸽类', quantity: 450, amount: 20250, growth: 15.8 },
-  { rank: 5, name: '乌鸡', category: '鸡类', quantity: 320, amount: 18560, growth: 6.7 },
-  { rank: 6, name: '番鸭', category: '鸭类', quantity: 285, amount: 13680, growth: 3.2 },
-  { rank: 7, name: '大白鹅', category: '鹅类', quantity: 120, amount: 15360, growth: 22.1 },
-];
-
-// 客户排行
-const customerRanking = [
-  { rank: 1, name: '王府酒家', orders: 45, amount: 58600, category: 'VIP' },
-  { rank: 2, name: '福满楼', orders: 38, amount: 42300, category: 'VIP' },
-  { rank: 3, name: '李氏餐馆', orders: 32, amount: 35800, category: 'VIP' },
-  { rank: 4, name: '张记酒楼', orders: 28, amount: 28500, category: '普通' },
-  { rank: 5, name: '赵家菜馆', orders: 25, amount: 22600, category: '普通' },
-];
-
-// 时段分布
-const hourlyDistribution = [
-  { hour: '06:00', orders: 8 },
-  { hour: '07:00', orders: 15 },
-  { hour: '08:00', orders: 28 },
-  { hour: '09:00', orders: 35 },
-  { hour: '10:00', orders: 42 },
-  { hour: '11:00', orders: 38 },
-  { hour: '12:00', orders: 25 },
-  { hour: '13:00', orders: 18 },
-  { hour: '14:00', orders: 22 },
-  { hour: '15:00', orders: 30 },
-  { hour: '16:00', orders: 35 },
-  { hour: '17:00', orders: 28 },
-  { hour: '18:00', orders: 15 },
-];
-
 const OrderStatisticsPage: React.FC = () => {
   const [dateRange, setDateRange] = useState<string>('week');
+  const [loading, setLoading] = useState(false);
+  const [salesTrend, setSalesTrend] = useState<any[]>([]);
+  const [categorySales, setCategorySales] = useState<any[]>([]);
+  const [productRanking, setProductRanking] = useState<any[]>([]);
+  const [customerRanking, setCustomerRanking] = useState<any[]>([]);
+  const [hourlyDistribution, setHourlyDistribution] = useState<any[]>([]);
+  const [activeCustomers, setActiveCustomers] = useState(0);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // 获取销售趋势
+      const days = dateRange === 'today' ? 1 : dateRange === 'week' ? 7 : dateRange === 'month' ? 30 : 90;
+      const trendData = await dashboardApi.getSalesTrend(days);
+      if (trendData && trendData.length > 0) {
+        setSalesTrend(trendData.map((item: any) => ({
+          date: item.date ? dayjs(item.date).format('MM-DD') : '',
+          sales: item.totalAmount || 0,
+          orders: item.orderCount || 0,
+          avgPrice: item.orderCount ? Math.round((item.totalAmount || 0) / item.orderCount) : 0,
+        })));
+      }
+
+      // 获取分类销售
+      const categoryData = await dashboardApi.getCategorySales();
+      if (categoryData && categoryData.length > 0) {
+        const totalSales = categoryData.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
+        setCategorySales(categoryData.map((item: any) => ({
+          category: item.categoryName || item.name,
+          sales: item.totalAmount || 0,
+          quantity: item.totalQuantity || 0,
+          percentage: totalSales ? Math.round(((item.totalAmount || 0) / totalSales) * 100) : 0,
+        })));
+      }
+
+      // 获取商品排行
+      const topProducts = await dashboardApi.getTopProducts(7);
+      if (topProducts && topProducts.length > 0) {
+        setProductRanking(topProducts.map((item: any, index: number) => ({
+          rank: index + 1,
+          name: item.productName || item.name,
+          category: item.categoryName || '',
+          quantity: item.totalQuantity || 0,
+          amount: item.totalAmount || 0,
+          growth: item.growth || 0,
+        })));
+      }
+
+      // 获取客户分析
+      const customerData = await customerApi.getAnalysis();
+      if (customerData?.topCustomers) {
+        setCustomerRanking(customerData.topCustomers.slice(0, 5).map((item: any, index: number) => ({
+          rank: index + 1,
+          name: item.name,
+          orders: item.totalOrders || 0,
+          amount: item.totalAmount || 0,
+          category: item.level === 'vip' || item.level === 'svip' ? 'VIP' : '普通',
+        })));
+        setActiveCustomers(customerData.activeCount || 0);
+      }
+
+      // 默认时段分布
+      setHourlyDistribution([
+        { hour: '06:00', orders: 8 },
+        { hour: '07:00', orders: 15 },
+        { hour: '08:00', orders: 28 },
+        { hour: '09:00', orders: 35 },
+        { hour: '10:00', orders: 42 },
+        { hour: '11:00', orders: 38 },
+        { hour: '12:00', orders: 25 },
+        { hour: '13:00', orders: 18 },
+        { hour: '14:00', orders: 22 },
+        { hour: '15:00', orders: 30 },
+        { hour: '16:00', orders: 35 },
+        { hour: '17:00', orders: 28 },
+        { hour: '18:00', orders: 15 },
+      ]);
+
+    } catch (error) {
+      console.error('获取统计数据失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [dateRange]);
 
   const lineConfig = {
     data: salesTrend,
@@ -241,10 +275,12 @@ const OrderStatisticsPage: React.FC = () => {
   ];
 
   // 总计统计
+  const totalSales = salesTrend.reduce((sum, item) => sum + item.sales, 0);
+  const totalOrders = salesTrend.reduce((sum, item) => sum + item.orders, 0);
   const totalStats = {
-    sales: salesTrend.reduce((sum, item) => sum + item.sales, 0),
-    orders: salesTrend.reduce((sum, item) => sum + item.orders, 0),
-    avgPrice: Math.round(salesTrend.reduce((sum, item) => sum + item.sales, 0) / salesTrend.reduce((sum, item) => sum + item.orders, 0)),
+    sales: totalSales,
+    orders: totalOrders,
+    avgPrice: totalOrders > 0 ? Math.round(totalSales / totalOrders) : 0,
   };
 
   return (
@@ -338,19 +374,16 @@ const OrderStatisticsPage: React.FC = () => {
             <Card bordered={false} className={styles.statCard}>
               <Statistic
                 title="活跃客户"
-                value={86}
+                value={activeCustomers}
                 suffix={
                   <span>
                     家
-                    <span className={styles.statTrend} style={{ color: '#52c41a', marginLeft: 8 }}>
-                      +3
-                    </span>
                   </span>
                 }
               />
               <div className={styles.customerProgress}>
-                <Text type="secondary">新客户占比</Text>
-                <Progress percent={18} size="small" strokeColor="#1890ff" />
+                <Text type="secondary">客户活跃情况</Text>
+                <Progress percent={Math.min(activeCustomers * 2, 100)} size="small" strokeColor="#1890ff" />
               </div>
             </Card>
           </Col>

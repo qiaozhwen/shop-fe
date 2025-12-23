@@ -14,6 +14,7 @@ import {
   Row,
   Select,
   Space,
+  Spin,
   Statistic,
   Table,
   Tabs,
@@ -21,70 +22,90 @@ import {
   Typography,
 } from 'antd';
 import dayjs from 'dayjs';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { reportApi, dashboardApi } from '@/services/api';
 import styles from './index.less';
 
 const { Text, Title } = Typography;
 const { RangePicker } = DatePicker;
 
-// 日销售数据
-const dailySalesData = [
-  { date: '12-01', sales: 25800, orders: 42, quantity: 580 },
-  { date: '12-02', sales: 28500, orders: 48, quantity: 620 },
-  { date: '12-03', sales: 32100, orders: 55, quantity: 710 },
-  { date: '12-04', sales: 29800, orders: 51, quantity: 660 },
-  { date: '12-05', sales: 35200, orders: 62, quantity: 780 },
-  { date: '12-06', sales: 38600, orders: 68, quantity: 850 },
-  { date: '12-07', sales: 42500, orders: 75, quantity: 920 },
-  { date: '12-08', sales: 28200, orders: 48, quantity: 620 },
-  { date: '12-09', sales: 31500, orders: 54, quantity: 690 },
-  { date: '12-10', sales: 35800, orders: 61, quantity: 780 },
-  { date: '12-11', sales: 33200, orders: 57, quantity: 730 },
-  { date: '12-12', sales: 38500, orders: 66, quantity: 840 },
-  { date: '12-13', sales: 41200, orders: 72, quantity: 900 },
-  { date: '12-14', sales: 45600, orders: 80, quantity: 1000 },
-];
-
-// 品类销售数据
-const categorySalesData = [
-  { category: '鸡类', sales: 285600, quantity: 6350, avgPrice: 45, percentage: 48 },
-  { category: '鸭类', sales: 142300, quantity: 3580, avgPrice: 40, percentage: 24 },
-  { category: '鸽类', sales: 95200, quantity: 2120, avgPrice: 45, percentage: 16 },
-  { category: '鹅类', sales: 71500, quantity: 560, avgPrice: 128, percentage: 12 },
-];
-
-// 商品销售排行
-const productSalesRanking = [
-  { rank: 1, name: '散养土鸡', category: '鸡类', quantity: 2580, sales: 116100, growth: 15.2 },
-  { rank: 2, name: '三黄鸡', category: '鸡类', quantity: 2150, sales: 75250, growth: 12.8 },
-  { rank: 3, name: '麻鸭', category: '鸭类', quantity: 1850, sales: 70300, growth: -3.5 },
-  { rank: 4, name: '肉鸽', category: '鸽类', quantity: 1620, sales: 72900, growth: 22.1 },
-  { rank: 5, name: '乌鸡', category: '鸡类', quantity: 980, sales: 56840, growth: 8.6 },
-  { rank: 6, name: '番鸭', category: '鸭类', quantity: 920, sales: 44160, growth: 5.3 },
-  { rank: 7, name: '大白鹅', category: '鹅类', quantity: 480, sales: 61440, growth: 18.9 },
-  { rank: 8, name: '珍珠鸡', category: '鸡类', quantity: 320, sales: 21760, growth: 10.2 },
-];
-
-// 时段销售分布
-const hourlyData = [
-  { hour: '06:00', sales: 8500, orders: 12 },
-  { hour: '07:00', sales: 15600, orders: 22 },
-  { hour: '08:00', sales: 28800, orders: 45 },
-  { hour: '09:00', sales: 35200, orders: 58 },
-  { hour: '10:00', sales: 42500, orders: 72 },
-  { hour: '11:00', sales: 38600, orders: 65 },
-  { hour: '12:00', sales: 25800, orders: 42 },
-  { hour: '13:00', sales: 18500, orders: 28 },
-  { hour: '14:00', sales: 22800, orders: 35 },
-  { hour: '15:00', sales: 32500, orders: 52 },
-  { hour: '16:00', sales: 38200, orders: 62 },
-  { hour: '17:00', sales: 28500, orders: 45 },
-  { hour: '18:00', sales: 15800, orders: 22 },
-];
-
 const SalesReportPage: React.FC = () => {
   const [period, setPeriod] = useState<string>('month');
   const [dateRange, setDateRange] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [dailySalesData, setDailySalesData] = useState<any[]>([]);
+  const [categorySalesData, setCategorySalesData] = useState<any[]>([]);
+  const [productSalesRanking, setProductSalesRanking] = useState<any[]>([]);
+  const [hourlyData, setHourlyData] = useState<any[]>([]);
+  const [summary, setSummary] = useState<any>({ totalSales: 0, totalOrders: 0, totalQuantity: 0 });
+
+  const fetchReportData = async () => {
+    setLoading(true);
+    try {
+      // 获取销售趋势
+      const trendData = await dashboardApi.getSalesTrend(14);
+      if (trendData && trendData.length > 0) {
+        setDailySalesData(trendData.map((item: any) => ({
+          date: item.date ? dayjs(item.date).format('MM-DD') : '',
+          sales: item.totalAmount || 0,
+          orders: item.orderCount || 0,
+          quantity: item.totalQuantity || 0,
+        })));
+      }
+
+      // 获取分类销售
+      const categoryData = await dashboardApi.getCategorySales();
+      if (categoryData && categoryData.length > 0) {
+        const totalSales = categoryData.reduce((sum: number, item: any) => sum + (item.totalAmount || 0), 0);
+        setCategorySalesData(categoryData.map((item: any) => ({
+          category: item.categoryName || item.name,
+          sales: item.totalAmount || 0,
+          quantity: item.totalQuantity || 0,
+          avgPrice: item.totalQuantity ? Math.round((item.totalAmount || 0) / item.totalQuantity) : 0,
+          percentage: totalSales ? Math.round(((item.totalAmount || 0) / totalSales) * 100) : 0,
+        })));
+      }
+
+      // 获取商品排行
+      const topProducts = await dashboardApi.getTopProducts(10);
+      if (topProducts && topProducts.length > 0) {
+        setProductSalesRanking(topProducts.map((item: any, index: number) => ({
+          rank: index + 1,
+          name: item.productName || item.name,
+          category: item.categoryName || '',
+          quantity: item.totalQuantity || 0,
+          sales: item.totalAmount || 0,
+          growth: item.growth || 0,
+        })));
+      }
+
+      // 使用默认时段数据
+      setHourlyData([
+        { hour: '06:00', sales: 8500, orders: 12 },
+        { hour: '07:00', sales: 15600, orders: 22 },
+        { hour: '08:00', sales: 28800, orders: 45 },
+        { hour: '09:00', sales: 35200, orders: 58 },
+        { hour: '10:00', sales: 42500, orders: 72 },
+        { hour: '11:00', sales: 38600, orders: 65 },
+        { hour: '12:00', sales: 25800, orders: 42 },
+        { hour: '13:00', sales: 18500, orders: 28 },
+        { hour: '14:00', sales: 22800, orders: 35 },
+        { hour: '15:00', sales: 32500, orders: 52 },
+        { hour: '16:00', sales: 38200, orders: 62 },
+        { hour: '17:00', sales: 28500, orders: 45 },
+        { hour: '18:00', sales: 15800, orders: 22 },
+      ]);
+
+    } catch (error) {
+      console.error('获取报表数据失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReportData();
+  }, [period, dateRange]);
 
   const dualAxesConfig = {
     data: [dailySalesData, dailySalesData],

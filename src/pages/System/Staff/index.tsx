@@ -26,94 +26,25 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { staffApi, Staff } from '@/services/api';
 import styles from './index.less';
 
 const { Text, Title } = Typography;
 
-interface Staff {
-  id: string;
-  name: string;
-  username: string;
-  phone: string;
-  role: string;
-  department: string;
-  status: boolean;
-  lastLogin?: string;
-  createdAt: string;
-}
-
-const mockStaff: Staff[] = [
-  {
-    id: '1',
-    name: '张三',
-    username: 'zhangsan',
-    phone: '13800138001',
-    role: '销售员',
-    department: '销售部',
-    status: true,
-    lastLogin: '2023-12-23 08:30:00',
-    createdAt: '2022-03-15',
-  },
-  {
-    id: '2',
-    name: '李四',
-    username: 'lisi',
-    phone: '13800138002',
-    role: '仓管员',
-    department: '仓储部',
-    status: true,
-    lastLogin: '2023-12-23 07:45:00',
-    createdAt: '2022-05-20',
-  },
-  {
-    id: '3',
-    name: '王五',
-    username: 'wangwu',
-    phone: '13800138003',
-    role: '销售员',
-    department: '销售部',
-    status: true,
-    lastLogin: '2023-12-22 18:00:00',
-    createdAt: '2022-08-10',
-  },
-  {
-    id: '4',
-    name: '赵六',
-    username: 'zhaoliu',
-    phone: '13800138004',
-    role: '财务',
-    department: '财务部',
-    status: true,
-    lastLogin: '2023-12-23 09:00:00',
-    createdAt: '2023-01-05',
-  },
-  {
-    id: '5',
-    name: '张总',
-    username: 'admin',
-    phone: '13800138000',
-    role: '管理员',
-    department: '管理层',
-    status: true,
-    lastLogin: '2023-12-23 10:00:00',
-    createdAt: '2022-01-01',
-  },
-  {
-    id: '6',
-    name: '小刘',
-    username: 'xiaoliu',
-    phone: '13800138005',
-    role: '配送员',
-    department: '配送部',
-    status: false,
-    lastLogin: '2023-11-15 12:00:00',
-    createdAt: '2023-06-01',
-  },
+const roleOptions = [
+  { value: 'admin', label: '管理员' },
+  { value: 'manager', label: '店长' },
+  { value: 'cashier', label: '收银员' },
+  { value: 'warehouse', label: '仓管员' },
 ];
 
-const roles = ['管理员', '销售员', '仓管员', '财务', '配送员'];
-const departments = ['管理层', '销售部', '仓储部', '财务部', '配送部'];
+const roleMap: Record<string, string> = {
+  admin: '管理员',
+  manager: '店长',
+  cashier: '收银员',
+  warehouse: '仓管员',
+};
 
 const StaffPage: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -121,8 +52,26 @@ const StaffPage: React.FC = () => {
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [currentStaff, setCurrentStaff] = useState<Staff | null>(null);
+  const [staffList, setStaffList] = useState<Staff[]>([]);
+  const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
+
+  const fetchStaff = async () => {
+    setLoading(true);
+    try {
+      const data = await staffApi.getAll();
+      setStaffList(data || []);
+    } catch (error) {
+      console.error('获取员工列表失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStaff();
+  }, []);
 
   const handleAdd = () => {
     setEditingStaff(null);
@@ -142,20 +91,29 @@ const StaffPage: React.FC = () => {
     setPasswordModalVisible(true);
   };
 
-  const handleDelete = (id: string) => {
-    message.success('删除成功');
-    actionRef.current?.reload();
+  const handleDelete = async (id: number) => {
+    try {
+      await staffApi.delete(id);
+      message.success('删除成功');
+      fetchStaff();
+      actionRef.current?.reload();
+    } catch (error) {
+      message.error('删除失败');
+    }
   };
 
   const handleSubmit = async () => {
     try {
-      await form.validateFields();
+      const values = await form.validateFields();
       if (editingStaff) {
+        await staffApi.update(editingStaff.id, values);
         message.success('更新成功');
       } else {
+        await staffApi.create(values);
         message.success('添加成功');
       }
       setModalVisible(false);
+      fetchStaff();
       actionRef.current?.reload();
     } catch (error) {
       console.error('验证失败:', error);
@@ -169,7 +127,10 @@ const StaffPage: React.FC = () => {
         message.error('两次输入的密码不一致');
         return;
       }
-      message.success('密码重置成功');
+      if (currentStaff) {
+        await staffApi.update(currentStaff.id, { password: values.newPassword });
+        message.success('密码重置成功');
+      }
       setPasswordModalVisible(false);
     } catch (error) {
       console.error('验证失败:', error);
@@ -184,7 +145,7 @@ const StaffPage: React.FC = () => {
       render: (_, record) => (
         <div className={styles.staffInfo}>
           <Avatar size={40} style={{ backgroundColor: '#D4380D' }}>
-            {record.name.charAt(0)}
+            {record.name?.charAt(0) || record.username?.charAt(0)}
           </Avatar>
           <div className={styles.staffMeta}>
             <Text strong>{record.name}</Text>
@@ -199,6 +160,7 @@ const StaffPage: React.FC = () => {
       key: 'phone',
       width: 130,
       search: false,
+      render: (phone) => phone || '-',
     },
     {
       title: '角色',
@@ -207,29 +169,20 @@ const StaffPage: React.FC = () => {
       width: 100,
       valueType: 'select',
       valueEnum: {
-        '管理员': { text: '管理员' },
-        '销售员': { text: '销售员' },
-        '仓管员': { text: '仓管员' },
-        '财务': { text: '财务' },
-        '配送员': { text: '配送员' },
+        admin: { text: '管理员' },
+        manager: { text: '店长' },
+        cashier: { text: '收银员' },
+        warehouse: { text: '仓管员' },
       },
       render: (_, record) => {
         const colorMap: Record<string, string> = {
-          '管理员': 'red',
-          '销售员': 'blue',
-          '仓管员': 'green',
-          '财务': 'purple',
-          '配送员': 'orange',
+          admin: 'red',
+          manager: 'blue',
+          cashier: 'green',
+          warehouse: 'orange',
         };
-        return <Tag color={colorMap[record.role]}>{record.role}</Tag>;
+        return <Tag color={colorMap[record.role] || 'default'}>{roleMap[record.role] || record.role}</Tag>;
       },
-    },
-    {
-      title: '部门',
-      dataIndex: 'department',
-      key: 'department',
-      width: 100,
-      search: false,
     },
     {
       title: '状态',
@@ -247,24 +200,33 @@ const StaffPage: React.FC = () => {
           checkedChildren="在职"
           unCheckedChildren="离职"
           size="small"
-          onChange={(checked) => message.success(checked ? '已启用' : '已禁用')}
+          onChange={async (checked) => {
+            try {
+              await staffApi.update(record.id, { status: checked });
+              message.success(checked ? '已启用' : '已禁用');
+              fetchStaff();
+            } catch (error) {
+              message.error('操作失败');
+            }
+          }}
         />
       ),
     },
     {
       title: '最近登录',
-      dataIndex: 'lastLogin',
-      key: 'lastLogin',
+      dataIndex: 'lastLoginAt',
+      key: 'lastLoginAt',
       width: 160,
       search: false,
-      render: (lastLogin) => lastLogin || '-',
+      render: (lastLoginAt) => lastLoginAt || '-',
     },
     {
-      title: '入职时间',
+      title: '创建时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 110,
       search: false,
+      render: (createdAt: any) => createdAt ? new Date(createdAt).toLocaleDateString() : '-',
     },
     {
       title: '操作',
@@ -289,11 +251,12 @@ const StaffPage: React.FC = () => {
     },
   ];
 
+  const todayStr = new Date().toISOString().split('T')[0];
   const stats = {
-    total: mockStaff.length,
-    active: mockStaff.filter((s) => s.status).length,
-    sales: mockStaff.filter((s) => s.role === '销售员').length,
-    todayOnline: mockStaff.filter((s) => s.lastLogin?.startsWith('2023-12-23')).length,
+    total: staffList.length,
+    active: staffList.filter((s) => s.status).length,
+    cashier: staffList.filter((s) => s.role === 'cashier').length,
+    todayOnline: staffList.filter((s) => s.lastLoginAt?.startsWith(todayStr)).length,
   };
 
   return (
@@ -315,9 +278,9 @@ const StaffPage: React.FC = () => {
             <Statistic title="在职员工" value={stats.active} suffix="人" valueStyle={{ color: '#52c41a' }} />
           </Card>
         </Col>
-        <Col xs={12} sm={6}>
+          <Col xs={12} sm={6}>
           <Card bordered={false} className={styles.statCard}>
-            <Statistic title="销售人员" value={stats.sales} suffix="人" valueStyle={{ color: '#1890ff' }} />
+            <Statistic title="收银人员" value={stats.cashier} suffix="人" valueStyle={{ color: '#1890ff' }} />
           </Card>
         </Col>
         <Col xs={12} sm={6}>
@@ -332,6 +295,7 @@ const StaffPage: React.FC = () => {
           headerTitle="员工列表"
           actionRef={actionRef}
           rowKey="id"
+          loading={loading}
           search={{
             labelWidth: 'auto',
           }}
@@ -341,7 +305,7 @@ const StaffPage: React.FC = () => {
             </Button>,
           ]}
           request={async (params) => {
-            let data = [...mockStaff];
+            let data = [...staffList];
             if (params.role) {
               data = data.filter((s) => s.role === params.role);
             }
@@ -395,7 +359,6 @@ const StaffPage: React.FC = () => {
               <Form.Item
                 name="phone"
                 label="联系电话"
-                rules={[{ required: true, message: '请输入联系电话' }]}
               >
                 <Input placeholder="请输入联系电话" />
               </Form.Item>
@@ -407,22 +370,12 @@ const StaffPage: React.FC = () => {
                 rules={[{ required: true, message: '请选择角色' }]}
               >
                 <Select
-                  options={roles.map((r) => ({ value: r, label: r }))}
+                  options={roleOptions}
                   placeholder="请选择角色"
                 />
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item
-            name="department"
-            label="部门"
-            rules={[{ required: true, message: '请选择部门' }]}
-          >
-            <Select
-              options={departments.map((d) => ({ value: d, label: d }))}
-              placeholder="请选择部门"
-            />
-          </Form.Item>
           {!editingStaff && (
             <Form.Item
               name="password"

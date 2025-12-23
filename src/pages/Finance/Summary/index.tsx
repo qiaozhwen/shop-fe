@@ -15,72 +15,72 @@ import {
   Progress,
   Radio,
   Row,
-  Segmented,
   Space,
   Statistic,
   Table,
   Tag,
   Typography,
+  message,
 } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { financeApi } from '@/services/api';
 import styles from './index.less';
 
 const { Text, Title } = Typography;
 const { RangePicker } = DatePicker;
 
-// 收支趋势数据
-const financeTrend = [
-  { date: '12-17', income: 28500, expense: 18200, profit: 10300 },
-  { date: '12-18', income: 32100, expense: 21500, profit: 10600 },
-  { date: '12-19', income: 25800, expense: 16800, profit: 9000 },
-  { date: '12-20', income: 38600, expense: 24300, profit: 14300 },
-  { date: '12-21', income: 35200, expense: 22100, profit: 13100 },
-  { date: '12-22', income: 42500, expense: 28600, profit: 13900 },
-  { date: '12-23', income: 15625, expense: 9800, profit: 5825 },
-];
-
-// 支出分类
-const expenseCategories = [
-  { type: '采购成本', value: 125600, percentage: 72 },
-  { type: '人工成本', value: 28500, percentage: 16 },
-  { type: '物流配送', value: 12800, percentage: 7 },
-  { type: '水电杂费', value: 5200, percentage: 3 },
-  { type: '其他支出', value: 3500, percentage: 2 },
-];
-
-// 收入来源
-const incomeCategories = [
-  { type: '销售收入', value: 215800 },
-  { type: '配送费', value: 8500 },
-  { type: '加工费', value: 3200 },
-];
-
-// 月度利润数据
-const monthlyProfit = [
-  { month: '7月', income: 285600, expense: 185200, profit: 100400, rate: 35.2 },
-  { month: '8月', income: 312500, expense: 198600, profit: 113900, rate: 36.4 },
-  { month: '9月', income: 298200, expense: 192800, profit: 105400, rate: 35.3 },
-  { month: '10月', income: 335800, expense: 215600, profit: 120200, rate: 35.8 },
-  { month: '11月', income: 358600, expense: 228500, profit: 130100, rate: 36.3 },
-  { month: '12月', income: 218325, expense: 141300, profit: 77025, rate: 35.3 },
-];
-
-// 应收账款
-const receivables = [
-  { customer: '王府酒家', amount: 28500, dueDate: '2024-01-05', days: 13, status: 'normal' },
-  { customer: '福满楼', amount: 15200, dueDate: '2024-01-10', days: 18, status: 'normal' },
-  { customer: '张记酒楼', amount: 10200, dueDate: '2023-12-28', days: 5, status: 'warning' },
-  { customer: '李氏餐馆', amount: 8600, dueDate: '2023-12-25', days: 2, status: 'urgent' },
-];
-
 const FinanceSummaryPage: React.FC = () => {
+  const [loading, setLoading] = useState(false);
   const [period, setPeriod] = useState<string>('week');
+  const [summary, setSummary] = useState<any>({});
+  const [financeTrend, setFinanceTrend] = useState<any[]>([]);
+  const [expenseCategories, setExpenseCategories] = useState<any[]>([]);
+  const [incomeCategories, setIncomeCategories] = useState<any[]>([]);
+  const [settlements, setSettlements] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchData();
+  }, [period]);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [summaryRes, settlementsRes] = await Promise.all([
+        financeApi.getSummary(),
+        financeApi.getSettlements(),
+      ]);
+      
+      setSummary(summaryRes || {});
+      setSettlements(settlementsRes || []);
+      
+      // 模拟生成趋势数据
+      if (summaryRes?.dailyData) {
+        setFinanceTrend(summaryRes.dailyData);
+      }
+      if (summaryRes?.expenseByCategory) {
+        setExpenseCategories(summaryRes.expenseByCategory);
+      }
+      if (summaryRes?.incomeByCategory) {
+        setIncomeCategories(summaryRes.incomeByCategory);
+      }
+    } catch (error) {
+      // 使用默认数据
+      setSummary({
+        totalIncome: 0,
+        totalExpense: 0,
+        totalProfit: 0,
+        profitRate: 0,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const areaConfig = {
     data: financeTrend.flatMap((item) => [
-      { date: item.date, value: item.income, type: '收入' },
-      { date: item.date, value: item.expense, type: '支出' },
-      { date: item.date, value: item.profit, type: '利润' },
+      { date: item.date, value: item.income || 0, type: '收入' },
+      { date: item.date, value: item.expense || 0, type: '支出' },
+      { date: item.date, value: (item.income || 0) - (item.expense || 0), type: '利润' },
     ]),
     xField: 'date',
     yField: 'value',
@@ -93,9 +93,11 @@ const FinanceSummaryPage: React.FC = () => {
         '支出': 'l(270) 0:rgba(255, 77, 79, 0.3) 1:rgba(255, 77, 79, 0.01)',
         '利润': 'l(270) 0:rgba(24, 144, 255, 0.3) 1:rgba(24, 144, 255, 0.01)',
       };
-      return { fill: colors[datum.type] };
+      return { fill: colors[datum.type] || colors['收入'] };
     },
   };
+
+  const totalExpense = expenseCategories.reduce((sum, item) => sum + (item.value || 0), 0);
 
   const expensePieConfig = {
     data: expenseCategories,
@@ -113,7 +115,7 @@ const FinanceSummaryPage: React.FC = () => {
         content: '总支出',
       },
       content: {
-        content: '¥175,600',
+        content: `¥${totalExpense.toLocaleString()}`,
         style: { fontSize: '18px' },
       },
     },
@@ -129,99 +131,56 @@ const FinanceSummaryPage: React.FC = () => {
     },
     label: {
       position: 'top' as const,
-      formatter: (datum: any) => `¥${(datum.value / 1000).toFixed(1)}k`,
+      formatter: (datum: any) => `¥${((datum.value || 0) / 1000).toFixed(1)}k`,
     },
   };
 
   const profitColumns = [
     {
-      title: '月份',
-      dataIndex: 'month',
-      key: 'month',
+      title: '日期',
+      dataIndex: 'date',
+      key: 'date',
     },
     {
       title: '收入',
       dataIndex: 'income',
       key: 'income',
-      render: (income: number) => <Text style={{ color: '#52c41a' }}>¥{income.toLocaleString()}</Text>,
+      render: (income: number) => <Text style={{ color: '#52c41a' }}>¥{(income || 0).toLocaleString()}</Text>,
     },
     {
       title: '支出',
       dataIndex: 'expense',
       key: 'expense',
-      render: (expense: number) => <Text style={{ color: '#ff4d4f' }}>¥{expense.toLocaleString()}</Text>,
+      render: (expense: number) => <Text style={{ color: '#ff4d4f' }}>¥{(expense || 0).toLocaleString()}</Text>,
     },
     {
       title: '利润',
       dataIndex: 'profit',
       key: 'profit',
-      render: (profit: number) => <Text strong style={{ color: '#1890ff' }}>¥{profit.toLocaleString()}</Text>,
+      render: (profit: number) => <Text strong style={{ color: '#1890ff' }}>¥{(profit || 0).toLocaleString()}</Text>,
     },
     {
       title: '利润率',
-      dataIndex: 'rate',
       key: 'rate',
-      render: (rate: number) => (
-        <Progress 
-          percent={rate} 
-          size="small" 
-          strokeColor="#1890ff" 
-          style={{ width: 80 }}
-          format={(p) => `${p}%`}
-        />
-      ),
-    },
-  ];
-
-  const receivableColumns = [
-    {
-      title: '客户',
-      dataIndex: 'customer',
-      key: 'customer',
-      render: (customer: string) => <Text strong>{customer}</Text>,
-    },
-    {
-      title: '应收金额',
-      dataIndex: 'amount',
-      key: 'amount',
-      render: (amount: number) => <Text strong style={{ color: '#D4380D' }}>¥{amount.toLocaleString()}</Text>,
-    },
-    {
-      title: '到期日',
-      dataIndex: 'dueDate',
-      key: 'dueDate',
-    },
-    {
-      title: '剩余天数',
-      dataIndex: 'days',
-      key: 'days',
-      render: (days: number, record: any) => (
-        <Text style={{ color: record.status === 'urgent' ? '#ff4d4f' : record.status === 'warning' ? '#faad14' : '#52c41a' }}>
-          {days}天
-        </Text>
-      ),
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: string) => {
-        const statusMap: any = {
-          normal: { color: 'success', text: '正常' },
-          warning: { color: 'warning', text: '即将到期' },
-          urgent: { color: 'error', text: '紧急' },
-        };
-        return <Tag color={statusMap[status]?.color}>{statusMap[status]?.text}</Tag>;
+      render: (_: any, record: any) => {
+        const rate = record.income > 0 ? ((record.profit || 0) / record.income * 100) : 0;
+        return (
+          <Progress 
+            percent={rate} 
+            size="small" 
+            strokeColor="#1890ff" 
+            style={{ width: 80 }}
+            format={(p) => `${(p || 0).toFixed(1)}%`}
+          />
+        );
       },
     },
   ];
 
-  // 计算统计数据
-  const totalIncome = financeTrend.reduce((sum, item) => sum + item.income, 0);
-  const totalExpense = financeTrend.reduce((sum, item) => sum + item.expense, 0);
-  const totalProfit = financeTrend.reduce((sum, item) => sum + item.profit, 0);
-  const profitRate = ((totalProfit / totalIncome) * 100).toFixed(1);
-  const totalReceivable = receivables.reduce((sum, item) => sum + item.amount, 0);
+  const totalIncome = summary.totalIncome || 0;
+  const totalExpenseValue = summary.totalExpense || 0;
+  const totalProfit = totalIncome - totalExpenseValue;
+  const profitRate = totalIncome > 0 ? ((totalProfit / totalIncome) * 100).toFixed(1) : '0';
 
   return (
     <PageContainer
@@ -247,7 +206,7 @@ const FinanceSummaryPage: React.FC = () => {
         {/* 核心指标 */}
         <Row gutter={16} style={{ marginBottom: 16 }}>
           <Col xs={12} sm={6}>
-            <Card bordered={false} className={styles.statCard}>
+            <Card bordered={false} className={styles.statCard} loading={loading}>
               <Statistic
                 title={<Space><RiseOutlined style={{ color: '#52c41a' }} /> 总收入</Space>}
                 value={totalIncome}
@@ -257,29 +216,29 @@ const FinanceSummaryPage: React.FC = () => {
               />
               <div className={styles.statTrend}>
                 <ArrowUpOutlined style={{ color: '#52c41a' }} />
-                <Text style={{ color: '#52c41a' }}> 12.5% </Text>
-                <Text type="secondary">较上周</Text>
+                <Text style={{ color: '#52c41a' }}> {summary.incomeTrend || 0}% </Text>
+                <Text type="secondary">较上期</Text>
               </div>
             </Card>
           </Col>
           <Col xs={12} sm={6}>
-            <Card bordered={false} className={styles.statCard}>
+            <Card bordered={false} className={styles.statCard} loading={loading}>
               <Statistic
                 title={<Space><FallOutlined style={{ color: '#ff4d4f' }} /> 总支出</Space>}
-                value={totalExpense}
+                value={totalExpenseValue}
                 precision={0}
                 prefix="¥"
                 valueStyle={{ color: '#ff4d4f' }}
               />
               <div className={styles.statTrend}>
                 <ArrowUpOutlined style={{ color: '#ff4d4f' }} />
-                <Text style={{ color: '#ff4d4f' }}> 8.3% </Text>
-                <Text type="secondary">较上周</Text>
+                <Text style={{ color: '#ff4d4f' }}> {summary.expenseTrend || 0}% </Text>
+                <Text type="secondary">较上期</Text>
               </div>
             </Card>
           </Col>
           <Col xs={12} sm={6}>
-            <Card bordered={false} className={styles.statCard}>
+            <Card bordered={false} className={styles.statCard} loading={loading}>
               <Statistic
                 title={<Space><DollarOutlined style={{ color: '#1890ff' }} /> 净利润</Space>}
                 value={totalProfit}
@@ -294,17 +253,17 @@ const FinanceSummaryPage: React.FC = () => {
             </Card>
           </Col>
           <Col xs={12} sm={6}>
-            <Card bordered={false} className={styles.statCard}>
+            <Card bordered={false} className={styles.statCard} loading={loading}>
               <Statistic
                 title={<Space><WalletOutlined style={{ color: '#722ed1' }} /> 应收账款</Space>}
-                value={totalReceivable}
+                value={summary.receivables || 0}
                 precision={0}
                 prefix="¥"
                 valueStyle={{ color: '#722ed1' }}
               />
               <div className={styles.statTrend}>
                 <Text type="secondary">待收款 </Text>
-                <Text strong>{receivables.length}笔</Text>
+                <Text strong>{summary.receivableCount || 0}笔</Text>
               </div>
             </Card>
           </Col>
@@ -315,8 +274,15 @@ const FinanceSummaryPage: React.FC = () => {
           title={<Title level={5} style={{ margin: 0 }}>收支趋势</Title>}
           bordered={false}
           style={{ marginBottom: 16 }}
+          loading={loading}
         >
-          <Area {...areaConfig} height={300} />
+          {financeTrend.length > 0 ? (
+            <Area {...areaConfig} height={300} />
+          ) : (
+            <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Text type="secondary">暂无数据</Text>
+            </div>
+          )}
         </Card>
 
         {/* 收入与支出分析 */}
@@ -325,61 +291,52 @@ const FinanceSummaryPage: React.FC = () => {
             <Card
               title={<Title level={5} style={{ margin: 0 }}>支出构成</Title>}
               bordered={false}
+              loading={loading}
             >
-              <Pie {...expensePieConfig} height={300} />
+              {expenseCategories.length > 0 ? (
+                <Pie {...expensePieConfig} height={300} />
+              ) : (
+                <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Text type="secondary">暂无数据</Text>
+                </div>
+              )}
             </Card>
           </Col>
           <Col xs={24} lg={12}>
             <Card
               title={<Title level={5} style={{ margin: 0 }}>收入来源</Title>}
               bordered={false}
+              loading={loading}
             >
-              <Column {...incomeColumnConfig} height={300} />
+              {incomeCategories.length > 0 ? (
+                <Column {...incomeColumnConfig} height={300} />
+              ) : (
+                <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Text type="secondary">暂无数据</Text>
+                </div>
+              )}
             </Card>
           </Col>
         </Row>
 
-        {/* 利润分析与应收账款 */}
-        <Row gutter={16}>
-          <Col xs={24} lg={14}>
-            <Card
-              title={<Title level={5} style={{ margin: 0 }}>月度利润分析</Title>}
-              bordered={false}
-            >
-              <Table
-                dataSource={monthlyProfit}
-                columns={profitColumns}
-                rowKey="month"
-                pagination={false}
-                size="middle"
-              />
-            </Card>
-          </Col>
-          <Col xs={24} lg={10}>
-            <Card
-              title={
-                <Space>
-                  <WalletOutlined style={{ color: '#722ed1' }} />
-                  <Title level={5} style={{ margin: 0 }}>应收账款</Title>
-                </Space>
-              }
-              bordered={false}
-              extra={<Text type="secondary">共{receivables.length}笔</Text>}
-            >
-              <Table
-                dataSource={receivables}
-                columns={receivableColumns}
-                rowKey="customer"
-                pagination={false}
-                size="middle"
-              />
-            </Card>
-          </Col>
-        </Row>
+        {/* 每日结算 */}
+        <Card
+          title={<Title level={5} style={{ margin: 0 }}>每日结算</Title>}
+          bordered={false}
+          loading={loading}
+        >
+          <Table
+            dataSource={settlements}
+            columns={profitColumns}
+            rowKey="date"
+            pagination={{ pageSize: 7 }}
+            size="middle"
+            locale={{ emptyText: '暂无数据' }}
+          />
+        </Card>
       </div>
     </PageContainer>
   );
 };
 
 export default FinanceSummaryPage;
-

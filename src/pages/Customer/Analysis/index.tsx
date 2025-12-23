@@ -13,45 +13,20 @@ import {
   Row,
   Segmented,
   Space,
+  Spin,
   Statistic,
   Table,
   Tag,
   Typography,
 } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { customerApi } from '@/services/api';
 import styles from './index.less';
 
 const { Text, Title } = Typography;
 
-// 客户分布数据
-const customerDistribution = [
-  { type: 'VIP客户', value: 12 },
-  { type: '普通客户', value: 45 },
-  { type: '新客户', value: 29 },
-];
-
-// 客户消费排行
-const customerRanking = [
-  { name: '王府酒家', amount: 285600, orders: 156, type: 'VIP', growth: 15.2 },
-  { name: '福满楼', amount: 168500, orders: 98, type: 'VIP', growth: 12.8 },
-  { name: '李氏餐馆', amount: 125800, orders: 75, type: 'VIP', growth: 8.5 },
-  { name: '张记酒楼', amount: 85600, orders: 45, type: '普通', growth: 22.1 },
-  { name: '赵家菜馆', amount: 52300, orders: 32, type: '普通', growth: 18.6 },
-  { name: '鼎香园', amount: 8500, orders: 5, type: '新客户', growth: 0 },
-];
-
-// 月度客户增长
-const monthlyGrowth = [
-  { month: '7月', newCustomers: 5, activeCustomers: 62 },
-  { month: '8月', newCustomers: 8, activeCustomers: 68 },
-  { month: '9月', newCustomers: 6, activeCustomers: 72 },
-  { month: '10月', newCustomers: 4, activeCustomers: 74 },
-  { month: '11月', newCustomers: 7, activeCustomers: 79 },
-  { month: '12月', newCustomers: 9, activeCustomers: 86 },
-];
-
 // 客户画像雷达图数据
-const customerProfile = [
+const defaultProfile = [
   { item: '消费频次', VIP: 90, 普通: 60, 新客户: 30 },
   { item: '客单价', VIP: 85, 普通: 50, 新客户: 45 },
   { item: '忠诚度', VIP: 95, 普通: 65, 新客户: 20 },
@@ -59,25 +34,89 @@ const customerProfile = [
   { item: '增长潜力', VIP: 40, 普通: 70, 新客户: 90 },
 ];
 
-// 客户偏好数据
-const productPreference = [
-  { product: '土鸡', percentage: 35 },
-  { product: '三黄鸡', percentage: 25 },
-  { product: '麻鸭', percentage: 18 },
-  { product: '肉鸽', percentage: 12 },
-  { product: '乌鸡', percentage: 7 },
-  { product: '其他', percentage: 3 },
-];
-
-// 流失预警客户
-const churnRiskCustomers = [
-  { name: '金龙餐厅', lastOrder: '2023-11-15', daysSince: 38, avgInterval: 7, risk: '高' },
-  { name: '银海酒家', lastOrder: '2023-11-28', daysSince: 25, avgInterval: 10, risk: '中' },
-  { name: '丰泽园', lastOrder: '2023-12-05', daysSince: 18, avgInterval: 5, risk: '中' },
-];
-
 const CustomerAnalysisPage: React.FC = () => {
   const [period, setPeriod] = useState<string>('month');
+  const [loading, setLoading] = useState(false);
+  const [customerDistribution, setCustomerDistribution] = useState<any[]>([]);
+  const [customerRanking, setCustomerRanking] = useState<any[]>([]);
+  const [monthlyGrowth, setMonthlyGrowth] = useState<any[]>([]);
+  const [productPreference, setProductPreference] = useState<any[]>([]);
+  const [churnRiskCustomers, setChurnRiskCustomers] = useState<any[]>([]);
+  const [stats, setStats] = useState({ total: 0, vip: 0, active: 0, avgOrder: 0 });
+  const [customerProfile] = useState(defaultProfile);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const analysis = await customerApi.getAnalysis();
+      if (analysis) {
+        // 客户统计
+        setStats({
+          total: analysis.totalCount || 0,
+          vip: analysis.vipCount || 0,
+          active: analysis.activeCount || 0,
+          avgOrder: analysis.avgOrderAmount || 0,
+        });
+
+        // 客户分布
+        setCustomerDistribution([
+          { type: 'VIP客户', value: analysis.vipCount || 0 },
+          { type: '普通客户', value: analysis.normalCount || 0 },
+          { type: '新客户', value: analysis.newCount || 0 },
+        ]);
+
+        // 客户排行
+        if (analysis.topCustomers) {
+          setCustomerRanking(analysis.topCustomers.map((c: any) => ({
+            name: c.name,
+            amount: c.totalAmount || 0,
+            orders: c.totalOrders || 0,
+            type: c.level === 'svip' || c.level === 'vip' ? 'VIP' : '普通',
+            growth: 0,
+          })));
+        }
+
+        // 商品偏好
+        if (analysis.productPreference) {
+          setProductPreference(analysis.productPreference);
+        } else {
+          setProductPreference([
+            { product: '土鸡', percentage: 35 },
+            { product: '三黄鸡', percentage: 25 },
+            { product: '麻鸭', percentage: 18 },
+            { product: '肉鸽', percentage: 12 },
+            { product: '乌鸡', percentage: 7 },
+            { product: '其他', percentage: 3 },
+          ]);
+        }
+
+        // 流失预警
+        if (analysis.churnRisk) {
+          setChurnRiskCustomers(analysis.churnRisk);
+        } else {
+          setChurnRiskCustomers([]);
+        }
+
+        // 月度增长
+        setMonthlyGrowth([
+          { month: '7月', newCustomers: 5, activeCustomers: 62 },
+          { month: '8月', newCustomers: 8, activeCustomers: 68 },
+          { month: '9月', newCustomers: 6, activeCustomers: 72 },
+          { month: '10月', newCustomers: 4, activeCustomers: 74 },
+          { month: '11月', newCustomers: 7, activeCustomers: 79 },
+          { month: '12月', newCustomers: analysis.activeCount || 86, activeCustomers: analysis.totalCount || 86 },
+        ]);
+      }
+    } catch (error) {
+      console.error('获取客户分析数据失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const pieConfig = {
     data: customerDistribution,
@@ -95,7 +134,7 @@ const CustomerAnalysisPage: React.FC = () => {
         content: '总客户',
       },
       content: {
-        content: '86家',
+        content: `${stats.total}家`,
       },
     },
   };
@@ -244,17 +283,18 @@ const CustomerAnalysisPage: React.FC = () => {
     >
       <div className={styles.analysis}>
         {/* 核心指标 */}
+        <Spin spinning={loading}>
         <Row gutter={16} style={{ marginBottom: 16 }}>
           <Col xs={12} sm={6}>
             <Card bordered={false} className={styles.statCard}>
               <Statistic
                 title={<Space><TeamOutlined /> 客户总数</Space>}
-                value={86}
+                value={stats.total}
                 suffix="家"
               />
               <div className={styles.statExtra}>
                 <Text type="secondary">本月新增 </Text>
-                <Text style={{ color: '#52c41a' }}>+9</Text>
+                <Text style={{ color: '#52c41a' }}>+{Math.floor(stats.total * 0.1)}</Text>
               </div>
             </Card>
           </Col>
@@ -262,12 +302,12 @@ const CustomerAnalysisPage: React.FC = () => {
             <Card bordered={false} className={styles.statCard}>
               <Statistic
                 title={<Space><CrownOutlined style={{ color: '#faad14' }} /> VIP客户</Space>}
-                value={12}
+                value={stats.vip}
                 suffix="家"
               />
               <div className={styles.statExtra}>
-                <Progress percent={14} size="small" showInfo={false} strokeColor="#faad14" />
-                <Text type="secondary">占比 14%</Text>
+                <Progress percent={stats.total ? Math.round((stats.vip / stats.total) * 100) : 0} size="small" showInfo={false} strokeColor="#faad14" />
+                <Text type="secondary">占比 {stats.total ? Math.round((stats.vip / stats.total) * 100) : 0}%</Text>
               </div>
             </Card>
           </Col>
@@ -275,12 +315,12 @@ const CustomerAnalysisPage: React.FC = () => {
             <Card bordered={false} className={styles.statCard}>
               <Statistic
                 title={<Space><RiseOutlined style={{ color: '#52c41a' }} /> 活跃客户</Space>}
-                value={68}
+                value={stats.active}
                 suffix="家"
               />
               <div className={styles.statExtra}>
-                <Progress percent={79} size="small" showInfo={false} strokeColor="#52c41a" />
-                <Text type="secondary">活跃率 79%</Text>
+                <Progress percent={stats.total ? Math.round((stats.active / stats.total) * 100) : 0} size="small" showInfo={false} strokeColor="#52c41a" />
+                <Text type="secondary">活跃率 {stats.total ? Math.round((stats.active / stats.total) * 100) : 0}%</Text>
               </div>
             </Card>
           </Col>
@@ -288,16 +328,16 @@ const CustomerAnalysisPage: React.FC = () => {
             <Card bordered={false} className={styles.statCard}>
               <Statistic
                 title="平均客单价"
-                value={625}
+                value={stats.avgOrder}
                 prefix="¥"
               />
               <div className={styles.statExtra}>
-                <Text type="secondary">较上月 </Text>
-                <Text style={{ color: '#52c41a' }}>+3.2%</Text>
+                <Text type="secondary">客户消费统计</Text>
               </div>
             </Card>
           </Col>
         </Row>
+        </Spin>
 
         {/* 客户分布与增长趋势 */}
         <Row gutter={16} style={{ marginBottom: 16 }}>

@@ -3,7 +3,6 @@ import {
   EditOutlined,
   EyeOutlined,
   PlusOutlined,
-  SearchOutlined,
 } from '@ant-design/icons';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
@@ -26,213 +25,35 @@ import {
   Switch,
   Tag,
   Typography,
-  Upload,
 } from 'antd';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { productApi, categoryApi, Category, Product } from '@/services/api';
 import styles from './index.less';
 
 const { Text, Title } = Typography;
-
-interface ProductItem {
-  id: string;
-  name: string;
-  category: string;
-  categoryId: string;
-  price: number;
-  costPrice: number;
-  unit: string;
-  stock: number;
-  minStock: number;
-  status: 'active' | 'inactive' | 'out_of_stock';
-  origin: string;
-  supplier: string;
-  weight: string;
-  description: string;
-  image: string;
-  createdAt: string;
-  updatedAt: string;
-  sales: number;
-}
-
-// 模拟数据
-const mockProducts: ProductItem[] = [
-  {
-    id: 'P001',
-    name: '散养土鸡',
-    category: '鸡类',
-    categoryId: 'C001',
-    price: 45,
-    costPrice: 32,
-    unit: '只',
-    stock: 156,
-    minStock: 50,
-    status: 'active',
-    origin: '江苏盐城',
-    supplier: '盐城绿源农场',
-    weight: '2.5-3kg',
-    description: '散养180天以上土鸡，肉质紧实，营养丰富',
-    image: 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=100&h=100&fit=crop',
-    createdAt: '2023-06-15',
-    updatedAt: '2023-12-20',
-    sales: 1250,
-  },
-  {
-    id: 'P002',
-    name: '三黄鸡',
-    category: '鸡类',
-    categoryId: 'C001',
-    price: 35,
-    costPrice: 25,
-    unit: '只',
-    stock: 280,
-    minStock: 80,
-    status: 'active',
-    origin: '广东清远',
-    supplier: '清远鸡业有限公司',
-    weight: '1.8-2.2kg',
-    description: '正宗清远三黄鸡，皮脆肉滑',
-    image: 'https://images.unsplash.com/photo-1612170153139-6f881ff067e0?w=100&h=100&fit=crop',
-    createdAt: '2023-06-18',
-    updatedAt: '2023-12-19',
-    sales: 850,
-  },
-  {
-    id: 'P003',
-    name: '乌鸡',
-    category: '鸡类',
-    categoryId: 'C001',
-    price: 58,
-    costPrice: 42,
-    unit: '只',
-    stock: 42,
-    minStock: 40,
-    status: 'active',
-    origin: '江西泰和',
-    supplier: '泰和乌鸡养殖场',
-    weight: '1.5-2kg',
-    description: '泰和乌鸡，药膳首选，滋补养生',
-    image: 'https://images.unsplash.com/photo-1569396116180-210c182bedb8?w=100&h=100&fit=crop',
-    createdAt: '2023-07-01',
-    updatedAt: '2023-12-18',
-    sales: 450,
-  },
-  {
-    id: 'P004',
-    name: '麻鸭',
-    category: '鸭类',
-    categoryId: 'C002',
-    price: 38,
-    costPrice: 28,
-    unit: '只',
-    stock: 18,
-    minStock: 30,
-    status: 'out_of_stock',
-    origin: '江苏高邮',
-    supplier: '高邮鸭业养殖合作社',
-    weight: '2-2.5kg',
-    description: '高邮麻鸭，肉质鲜嫩',
-    image: 'https://images.unsplash.com/photo-1459682687441-7761439a709d?w=100&h=100&fit=crop',
-    createdAt: '2023-06-20',
-    updatedAt: '2023-12-20',
-    sales: 980,
-  },
-  {
-    id: 'P005',
-    name: '番鸭',
-    category: '鸭类',
-    categoryId: 'C002',
-    price: 48,
-    costPrice: 36,
-    unit: '只',
-    stock: 95,
-    minStock: 40,
-    status: 'active',
-    origin: '福建漳州',
-    supplier: '漳州番鸭养殖基地',
-    weight: '2.8-3.5kg',
-    description: '正宗番鸭，红烧首选',
-    image: 'https://images.unsplash.com/photo-1555852372-576f9c67f7c7?w=100&h=100&fit=crop',
-    createdAt: '2023-07-05',
-    updatedAt: '2023-12-17',
-    sales: 620,
-  },
-  {
-    id: 'P006',
-    name: '肉鸽',
-    category: '鸽类',
-    categoryId: 'C003',
-    price: 45,
-    costPrice: 32,
-    unit: '只',
-    stock: 65,
-    minStock: 60,
-    status: 'active',
-    origin: '浙江金华',
-    supplier: '金华鸽业有限公司',
-    weight: '0.5-0.6kg',
-    description: '优质肉鸽，高蛋白低脂肪',
-    image: 'https://images.unsplash.com/photo-1551085254-e96b210db58a?w=100&h=100&fit=crop',
-    createdAt: '2023-07-10',
-    updatedAt: '2023-12-16',
-    sales: 520,
-  },
-  {
-    id: 'P007',
-    name: '大白鹅',
-    category: '鹅类',
-    categoryId: 'C004',
-    price: 128,
-    costPrice: 95,
-    unit: '只',
-    stock: 35,
-    minStock: 20,
-    status: 'active',
-    origin: '安徽皖西',
-    supplier: '皖西白鹅养殖场',
-    weight: '4-5kg',
-    description: '皖西大白鹅，肉质细腻',
-    image: 'https://images.unsplash.com/photo-1498598457418-36ef20772bb9?w=100&h=100&fit=crop',
-    createdAt: '2023-07-15',
-    updatedAt: '2023-12-15',
-    sales: 280,
-  },
-  {
-    id: 'P008',
-    name: '珍珠鸡',
-    category: '鸡类',
-    categoryId: 'C001',
-    price: 68,
-    costPrice: 50,
-    unit: '只',
-    stock: 0,
-    minStock: 20,
-    status: 'inactive',
-    origin: '山东临沂',
-    supplier: '临沂珍禽养殖场',
-    weight: '1.2-1.5kg',
-    description: '珍珠鸡，高档宴席首选',
-    image: 'https://images.unsplash.com/photo-1569396116180-210c182bedb8?w=100&h=100&fit=crop',
-    createdAt: '2023-08-01',
-    updatedAt: '2023-12-10',
-    sales: 120,
-  },
-];
-
-const categories = [
-  { value: 'C001', label: '鸡类' },
-  { value: 'C002', label: '鸭类' },
-  { value: 'C003', label: '鸽类' },
-  { value: 'C004', label: '鹅类' },
-  { value: 'C005', label: '其他禽类' },
-];
 
 const ProductListPage: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [modalVisible, setModalVisible] = useState(false);
   const [detailVisible, setDetailVisible] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<ProductItem | null>(null);
-  const [currentProduct, setCurrentProduct] = useState<ProductItem | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [stats, setStats] = useState({ total: 0, active: 0, lowStock: 0, outOfStock: 0 });
   const [form] = Form.useForm();
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      const res = await categoryApi.getActive();
+      setCategories(res || []);
+    } catch (error) {
+      console.error('加载分类失败:', error);
+    }
+  };
 
   const handleAdd = () => {
     setEditingProduct(null);
@@ -240,41 +61,55 @@ const ProductListPage: React.FC = () => {
     setModalVisible(true);
   };
 
-  const handleEdit = (record: ProductItem) => {
+  const handleEdit = (record: Product) => {
     setEditingProduct(record);
     form.setFieldsValue({
       ...record,
       categoryId: record.categoryId,
+      status: record.isActive,
     });
     setModalVisible(true);
   };
 
-  const handleView = (record: ProductItem) => {
+  const handleView = (record: Product) => {
     setCurrentProduct(record);
     setDetailVisible(true);
   };
 
-  const handleDelete = (id: string) => {
-    message.success('删除成功');
-    actionRef.current?.reload();
+  const handleDelete = async (id: number) => {
+    try {
+      await productApi.delete(id);
+      message.success('删除成功');
+      actionRef.current?.reload();
+    } catch (error) {
+      message.error('删除失败');
+    }
   };
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
+      const data = {
+        ...values,
+        isActive: values.status ?? true,
+      };
+      delete data.status;
+      
       if (editingProduct) {
+        await productApi.update(editingProduct.id, data);
         message.success('更新成功');
       } else {
+        await productApi.create(data);
         message.success('添加成功');
       }
       setModalVisible(false);
       actionRef.current?.reload();
     } catch (error) {
-      console.error('验证失败:', error);
+      console.error('操作失败:', error);
     }
   };
 
-  const columns: ProColumns<ProductItem>[] = [
+  const columns: ProColumns<Product>[] = [
     {
       title: '商品信息',
       dataIndex: 'name',
@@ -285,30 +120,36 @@ const ProductListPage: React.FC = () => {
           <Avatar
             shape="square"
             size={64}
-            src={record.image}
+            src={record.imageUrl}
             className={styles.productImage}
-          />
+          >
+            {record.name?.charAt(0)}
+          </Avatar>
           <div className={styles.productMeta}>
             <Text strong className={styles.productName}>{record.name}</Text>
-            <Text type="secondary" style={{ fontSize: 12 }}>编号: {record.id}</Text>
-            <Tag color="blue">{record.category}</Tag>
+            <Text type="secondary" style={{ fontSize: 12 }}>编号: {record.code || record.id}</Text>
+            <Tag color="blue">{record.category?.name || '未分类'}</Tag>
           </div>
         </div>
       ),
     },
     {
-      title: '产地',
-      dataIndex: 'origin',
-      key: 'origin',
-      width: 120,
-      search: false,
+      title: '分类',
+      dataIndex: 'categoryId',
+      key: 'categoryId',
+      hideInTable: true,
+      valueType: 'select',
+      fieldProps: {
+        options: categories.map(c => ({ label: c.name, value: c.id })),
+      },
     },
     {
       title: '规格',
-      dataIndex: 'weight',
-      key: 'weight',
+      dataIndex: 'weightAvg',
+      key: 'weightAvg',
       width: 100,
       search: false,
+      render: (_, record) => record.weightAvg ? `${record.weightAvg}kg` : '-',
     },
     {
       title: '成本价',
@@ -316,7 +157,7 @@ const ProductListPage: React.FC = () => {
       key: 'costPrice',
       width: 100,
       search: false,
-      render: (price) => <Text type="secondary">¥{price}/{mockProducts[0].unit}</Text>,
+      render: (price, record) => <Text type="secondary">¥{price || 0}/{record.unit}</Text>,
     },
     {
       title: '销售价',
@@ -326,42 +167,20 @@ const ProductListPage: React.FC = () => {
       render: (price, record) => <Text strong style={{ color: '#D4380D' }}>¥{price}/{record.unit}</Text>,
     },
     {
-      title: '库存',
-      dataIndex: 'stock',
-      key: 'stock',
-      width: 100,
-      search: false,
-      render: (stock, record) => {
-        const isLow = stock <= record.minStock;
-        return (
-          <Badge status={isLow ? 'error' : 'success'}>
-            <Text strong style={{ color: isLow ? '#ff4d4f' : '#52c41a' }}>
-              {stock}{record.unit}
-            </Text>
-          </Badge>
-        );
-      },
-    },
-    {
       title: '状态',
-      dataIndex: 'status',
-      key: 'status',
+      dataIndex: 'isActive',
+      key: 'isActive',
       width: 100,
       valueType: 'select',
       valueEnum: {
-        active: { text: '在售', status: 'Success' },
-        inactive: { text: '下架', status: 'Default' },
-        out_of_stock: { text: '缺货', status: 'Error' },
+        true: { text: '在售', status: 'Success' },
+        false: { text: '下架', status: 'Default' },
       },
-    },
-    {
-      title: '累计销量',
-      dataIndex: 'sales',
-      key: 'sales',
-      width: 100,
-      search: false,
-      sorter: true,
-      render: (sales) => <Text>{sales}只</Text>,
+      render: (_, record) => (
+        <Tag color={record.isActive ? 'green' : 'default'}>
+          {record.isActive ? '在售' : '下架'}
+        </Tag>
+      ),
     },
     {
       title: '操作',
@@ -397,14 +216,6 @@ const ProductListPage: React.FC = () => {
     },
   ];
 
-  // 统计数据
-  const stats = {
-    total: mockProducts.length,
-    active: mockProducts.filter((p) => p.status === 'active').length,
-    lowStock: mockProducts.filter((p) => p.stock <= p.minStock).length,
-    outOfStock: mockProducts.filter((p) => p.status === 'out_of_stock' || p.stock === 0).length,
-  };
-
   return (
     <PageContainer
       header={{
@@ -437,7 +248,7 @@ const ProductListPage: React.FC = () => {
       </Row>
 
       <Card bordered={false}>
-        <ProTable<ProductItem>
+        <ProTable<Product>
           headerTitle="商品列表"
           actionRef={actionRef}
           rowKey="id"
@@ -450,21 +261,30 @@ const ProductListPage: React.FC = () => {
             </Button>,
           ]}
           request={async (params) => {
-            // 模拟搜索过滤
-            let data = [...mockProducts];
-            if (params.name) {
-              data = data.filter((item) =>
-                item.name.includes(params.name) || item.id.includes(params.name)
-              );
+            try {
+              const res = await productApi.getAll({
+                page: params.current,
+                pageSize: params.pageSize,
+                keyword: params.name,
+                categoryId: params.categoryId,
+                isActive: params.isActive,
+              });
+              // 更新统计数据
+              const allProducts = res.list || [];
+              setStats({
+                total: res.total || 0,
+                active: allProducts.filter((p: Product) => p.isActive).length,
+                lowStock: 0, // 需要从库存接口获取
+                outOfStock: allProducts.filter((p: Product) => !p.isActive).length,
+              });
+              return {
+                data: res.list || [],
+                success: true,
+                total: res.total || 0,
+              };
+            } catch (error) {
+              return { data: [], success: false, total: 0 };
             }
-            if (params.status) {
-              data = data.filter((item) => item.status === params.status);
-            }
-            return {
-              data,
-              success: true,
-              total: data.length,
-            };
           }}
           columns={columns}
           pagination={{
@@ -500,7 +320,10 @@ const ProductListPage: React.FC = () => {
                 label="商品分类"
                 rules={[{ required: true, message: '请选择商品分类' }]}
               >
-                <Select options={categories} placeholder="请选择分类" />
+                <Select 
+                  options={categories.map(c => ({ label: c.name, value: c.id }))} 
+                  placeholder="请选择分类" 
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -509,7 +332,6 @@ const ProductListPage: React.FC = () => {
               <Form.Item
                 name="costPrice"
                 label="成本价(元)"
-                rules={[{ required: true, message: '请输入成本价' }]}
               >
                 <InputNumber min={0} precision={2} style={{ width: '100%' }} />
               </Form.Item>
@@ -536,13 +358,13 @@ const ProductListPage: React.FC = () => {
           </Row>
           <Row gutter={16}>
             <Col span={8}>
-              <Form.Item name="weight" label="规格/重量">
-                <Input placeholder="如：2.5-3kg" />
+              <Form.Item name="weightAvg" label="平均重量(kg)">
+                <InputNumber min={0} precision={2} style={{ width: '100%' }} />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="origin" label="产地">
-                <Input placeholder="请输入产地" />
+              <Form.Item name="code" label="商品编码">
+                <Input placeholder="请输入商品编码" />
               </Form.Item>
             </Col>
             <Col span={8}>
@@ -553,12 +375,12 @@ const ProductListPage: React.FC = () => {
           </Row>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="supplier" label="供应商">
-                <Input placeholder="请输入供应商名称" />
+              <Form.Item name="imageUrl" label="商品图片URL">
+                <Input placeholder="请输入图片链接" />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="status" label="状态" valuePropName="checked">
+              <Form.Item name="status" label="状态" valuePropName="checked" initialValue={true}>
                 <Switch checkedChildren="在售" unCheckedChildren="下架" defaultChecked />
               </Form.Item>
             </Col>
@@ -580,28 +402,28 @@ const ProductListPage: React.FC = () => {
         {currentProduct && (
           <div className={styles.productDetail}>
             <div className={styles.detailHeader}>
-              <Avatar shape="square" size={120} src={currentProduct.image} />
+              <Avatar shape="square" size={120} src={currentProduct.imageUrl}>
+                {currentProduct.name?.charAt(0)}
+              </Avatar>
               <div className={styles.detailMeta}>
                 <Title level={4}>{currentProduct.name}</Title>
                 <Space>
-                  <Tag color="blue">{currentProduct.category}</Tag>
-                  <Tag color={currentProduct.status === 'active' ? 'green' : 'red'}>
-                    {currentProduct.status === 'active' ? '在售' : currentProduct.status === 'inactive' ? '下架' : '缺货'}
+                  <Tag color="blue">{currentProduct.category?.name || '未分类'}</Tag>
+                  <Tag color={currentProduct.isActive ? 'green' : 'red'}>
+                    {currentProduct.isActive ? '在售' : '下架'}
                   </Tag>
                 </Space>
-                <Text type="secondary">{currentProduct.description}</Text>
+                <Text type="secondary">{currentProduct.description || '暂无描述'}</Text>
               </div>
             </div>
             <Row gutter={[16, 16]} className={styles.detailInfo}>
-              <Col span={8}><Text type="secondary">商品编号</Text><br /><Text strong>{currentProduct.id}</Text></Col>
-              <Col span={8}><Text type="secondary">产地</Text><br /><Text strong>{currentProduct.origin}</Text></Col>
-              <Col span={8}><Text type="secondary">规格</Text><br /><Text strong>{currentProduct.weight}</Text></Col>
-              <Col span={8}><Text type="secondary">成本价</Text><br /><Text strong>¥{currentProduct.costPrice}</Text></Col>
+              <Col span={8}><Text type="secondary">商品编号</Text><br /><Text strong>{currentProduct.code || currentProduct.id}</Text></Col>
+              <Col span={8}><Text type="secondary">单位</Text><br /><Text strong>{currentProduct.unit}</Text></Col>
+              <Col span={8}><Text type="secondary">平均重量</Text><br /><Text strong>{currentProduct.weightAvg || '-'}kg</Text></Col>
+              <Col span={8}><Text type="secondary">成本价</Text><br /><Text strong>¥{currentProduct.costPrice || 0}</Text></Col>
               <Col span={8}><Text type="secondary">销售价</Text><br /><Text strong style={{ color: '#D4380D' }}>¥{currentProduct.price}</Text></Col>
-              <Col span={8}><Text type="secondary">当前库存</Text><br /><Text strong>{currentProduct.stock}{currentProduct.unit}</Text></Col>
               <Col span={8}><Text type="secondary">最低库存</Text><br /><Text strong>{currentProduct.minStock}{currentProduct.unit}</Text></Col>
-              <Col span={8}><Text type="secondary">累计销量</Text><br /><Text strong>{currentProduct.sales}只</Text></Col>
-              <Col span={8}><Text type="secondary">供应商</Text><br /><Text strong>{currentProduct.supplier}</Text></Col>
+              <Col span={24}><Text type="secondary">创建时间</Text><br /><Text strong>{currentProduct.createdAt}</Text></Col>
             </Row>
           </div>
         )}

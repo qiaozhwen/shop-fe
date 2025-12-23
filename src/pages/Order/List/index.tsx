@@ -1,9 +1,7 @@
 import {
-  DeleteOutlined,
   DownloadOutlined,
   EyeOutlined,
   PrinterOutlined,
-  SearchOutlined,
 } from '@ant-design/icons';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
@@ -12,7 +10,6 @@ import {
   Button,
   Card,
   Col,
-  DatePicker,
   Descriptions,
   Divider,
   message,
@@ -23,176 +20,40 @@ import {
   Statistic,
   Table,
   Tag,
-  Timeline,
   Typography,
 } from 'antd';
 import dayjs from 'dayjs';
 import React, { useRef, useState } from 'react';
+import { orderApi, Order } from '@/services/api';
 import styles from './index.less';
 
 const { Text, Title } = Typography;
-const { RangePicker } = DatePicker;
-
-interface OrderItem {
-  productId: string;
-  productName: string;
-  category: string;
-  quantity: number;
-  unitPrice: number;
-  amount: number;
-}
-
-interface Order {
-  id: string;
-  orderNo: string;
-  customer: string;
-  customerId: string;
-  customerPhone: string;
-  totalQuantity: number;
-  totalAmount: number;
-  paidAmount: number;
-  paymentMethod: 'cash' | 'wechat' | 'alipay' | 'credit';
-  status: 'pending' | 'paid' | 'completed' | 'cancelled' | 'refunded';
-  operator: string;
-  createdAt: string;
-  completedAt?: string;
-  remark?: string;
-  items: OrderItem[];
-}
-
-// 模拟订单数据
-const mockOrders: Order[] = [
-  {
-    id: '1',
-    orderNo: 'ORD202312230001',
-    customer: '王府酒家',
-    customerId: 'C001',
-    customerPhone: '13800138001',
-    totalQuantity: 35,
-    totalAmount: 1575,
-    paidAmount: 1575,
-    paymentMethod: 'wechat',
-    status: 'completed',
-    operator: '张三',
-    createdAt: '2023-12-23 08:30:15',
-    completedAt: '2023-12-23 08:32:00',
-    items: [
-      { productId: 'P001', productName: '散养土鸡', category: '鸡类', quantity: 20, unitPrice: 45, amount: 900 },
-      { productId: 'P006', productName: '肉鸽', category: '鸽类', quantity: 15, unitPrice: 45, amount: 675 },
-    ],
-  },
-  {
-    id: '2',
-    orderNo: 'ORD202312230002',
-    customer: '福满楼',
-    customerId: 'C002',
-    customerPhone: '13800138002',
-    totalQuantity: 50,
-    totalAmount: 2400,
-    paidAmount: 2400,
-    paymentMethod: 'alipay',
-    status: 'completed',
-    operator: '张三',
-    createdAt: '2023-12-23 09:15:42',
-    completedAt: '2023-12-23 09:18:00',
-    items: [
-      { productId: 'P002', productName: '三黄鸡', category: '鸡类', quantity: 30, unitPrice: 35, amount: 1050 },
-      { productId: 'P004', productName: '麻鸭', category: '鸭类', quantity: 20, unitPrice: 38, amount: 760 },
-      { productId: 'P005', productName: '番鸭', category: '鸭类', quantity: 10, unitPrice: 48, amount: 480 },
-    ],
-  },
-  {
-    id: '3',
-    orderNo: 'ORD202312230003',
-    customer: '李氏餐馆',
-    customerId: 'C003',
-    customerPhone: '13800138003',
-    totalQuantity: 25,
-    totalAmount: 1450,
-    paidAmount: 1450,
-    paymentMethod: 'cash',
-    status: 'paid',
-    operator: '王五',
-    createdAt: '2023-12-23 10:05:30',
-    items: [
-      { productId: 'P003', productName: '乌鸡', category: '鸡类', quantity: 15, unitPrice: 58, amount: 870 },
-      { productId: 'P005', productName: '番鸭', category: '鸭类', quantity: 10, unitPrice: 48, amount: 480 },
-    ],
-  },
-  {
-    id: '4',
-    orderNo: 'ORD202312230004',
-    customer: '张记酒楼',
-    customerId: 'C004',
-    customerPhone: '13800138004',
-    totalQuantity: 80,
-    totalAmount: 10240,
-    paidAmount: 0,
-    paymentMethod: 'credit',
-    status: 'pending',
-    operator: '张三',
-    createdAt: '2023-12-23 11:20:00',
-    items: [
-      { productId: 'P007', productName: '大白鹅', category: '鹅类', quantity: 80, unitPrice: 128, amount: 10240 },
-    ],
-  },
-  {
-    id: '5',
-    orderNo: 'ORD202312220001',
-    customer: '赵家菜馆',
-    customerId: 'C005',
-    customerPhone: '13800138005',
-    totalQuantity: 45,
-    totalAmount: 2025,
-    paidAmount: 2025,
-    paymentMethod: 'wechat',
-    status: 'completed',
-    operator: '李四',
-    createdAt: '2023-12-22 14:30:00',
-    completedAt: '2023-12-22 14:35:00',
-    items: [
-      { productId: 'P001', productName: '散养土鸡', category: '鸡类', quantity: 45, unitPrice: 45, amount: 2025 },
-    ],
-  },
-  {
-    id: '6',
-    orderNo: 'ORD202312220002',
-    customer: '王府酒家',
-    customerId: 'C001',
-    customerPhone: '13800138001',
-    totalQuantity: 30,
-    totalAmount: 1380,
-    paidAmount: 1380,
-    paymentMethod: 'cash',
-    status: 'refunded',
-    operator: '张三',
-    createdAt: '2023-12-22 16:00:00',
-    remark: '客户退货，商品质量问题',
-    items: [
-      { productId: 'P004', productName: '麻鸭', category: '鸭类', quantity: 30, unitPrice: 38, amount: 1140 },
-    ],
-  },
-];
 
 const OrderListPage: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [detailVisible, setDetailVisible] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
+  const [stats, setStats] = useState({ count: 0, quantity: 0, amount: 0, completed: 0, pending: 0 });
 
-  const handleView = (record: Order) => {
-    setCurrentOrder(record);
-    setDetailVisible(true);
+  const handleView = async (record: Order) => {
+    try {
+      const detail = await orderApi.getById(record.id);
+      setCurrentOrder(detail);
+      setDetailVisible(true);
+    } catch (error) {
+      setCurrentOrder(record);
+      setDetailVisible(true);
+    }
   };
 
-  const handleCancel = (record: Order) => {
-    Modal.confirm({
-      title: '确认取消',
-      content: `确定要取消订单 ${record.orderNo} 吗？`,
-      onOk: () => {
-        message.success('订单已取消');
-        actionRef.current?.reload();
-      },
-    });
+  const handleCancel = async (record: Order) => {
+    try {
+      await orderApi.cancel(record.id);
+      message.success('订单已取消');
+      actionRef.current?.reload();
+    } catch (error) {
+      message.error('取消失败');
+    }
   };
 
   const handlePrint = (record: Order) => {
@@ -203,15 +64,15 @@ const OrderListPage: React.FC = () => {
     cash: { text: '现金', color: 'green' },
     wechat: { text: '微信', color: 'success' },
     alipay: { text: '支付宝', color: 'blue' },
+    card: { text: '银行卡', color: 'purple' },
     credit: { text: '挂账', color: 'orange' },
   };
 
   const statusMap: Record<string, { text: string; status: 'default' | 'processing' | 'success' | 'error' | 'warning' }> = {
-    pending: { text: '待付款', status: 'warning' },
-    paid: { text: '已付款', status: 'processing' },
+    pending: { text: '待处理', status: 'warning' },
+    processing: { text: '处理中', status: 'processing' },
     completed: { text: '已完成', status: 'success' },
     cancelled: { text: '已取消', status: 'default' },
-    refunded: { text: '已退款', status: 'error' },
   };
 
   const columns: ProColumns<Order>[] = [
@@ -228,9 +89,7 @@ const OrderListPage: React.FC = () => {
       width: 160,
       render: (_, record) => (
         <div>
-          <Text strong>{record.customer}</Text>
-          <br />
-          <Text type="secondary" style={{ fontSize: 12 }}>{record.customerPhone}</Text>
+          <Text strong>{record.customerName || record.customer?.name || '散客'}</Text>
         </div>
       ),
     },
@@ -244,12 +103,12 @@ const OrderListPage: React.FC = () => {
     },
     {
       title: '订单金额',
-      dataIndex: 'totalAmount',
-      key: 'totalAmount',
+      dataIndex: 'actualAmount',
+      key: 'actualAmount',
       search: false,
       width: 120,
       sorter: true,
-      render: (amount) => <Text strong style={{ color: '#D4380D' }}>¥{amount?.toLocaleString()}</Text>,
+      render: (amount) => <Text strong style={{ color: '#D4380D' }}>¥{(amount || 0).toLocaleString()}</Text>,
     },
     {
       title: '支付方式',
@@ -261,11 +120,24 @@ const OrderListPage: React.FC = () => {
         cash: { text: '现金' },
         wechat: { text: '微信' },
         alipay: { text: '支付宝' },
+        card: { text: '银行卡' },
         credit: { text: '挂账' },
       },
       render: (_, record) => {
         const method = paymentMethodMap[record.paymentMethod];
-        return <Tag color={method?.color}>{method?.text}</Tag>;
+        return <Tag color={method?.color}>{method?.text || record.paymentMethod}</Tag>;
+      },
+    },
+    {
+      title: '支付状态',
+      dataIndex: 'paymentStatus',
+      key: 'paymentStatus',
+      width: 100,
+      valueType: 'select',
+      valueEnum: {
+        unpaid: { text: '未支付', status: 'Warning' },
+        partial: { text: '部分支付', status: 'Processing' },
+        paid: { text: '已支付', status: 'Success' },
       },
     },
     {
@@ -275,27 +147,20 @@ const OrderListPage: React.FC = () => {
       width: 100,
       valueType: 'select',
       valueEnum: {
-        pending: { text: '待付款', status: 'Warning' },
-        paid: { text: '已付款', status: 'Processing' },
+        pending: { text: '待处理', status: 'Warning' },
+        processing: { text: '处理中', status: 'Processing' },
         completed: { text: '已完成', status: 'Success' },
         cancelled: { text: '已取消', status: 'Default' },
-        refunded: { text: '已退款', status: 'Error' },
       },
     },
     {
-      title: '操作员',
-      dataIndex: 'operator',
-      key: 'operator',
-      search: false,
-      width: 80,
-    },
-    {
       title: '下单时间',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
+      dataIndex: 'orderAt',
+      key: 'orderAt',
       valueType: 'dateTime',
       width: 160,
       sorter: true,
+      search: false,
     },
     {
       title: '操作',
@@ -310,7 +175,7 @@ const OrderListPage: React.FC = () => {
           <Button type="link" size="small" icon={<PrinterOutlined />} onClick={() => handlePrint(record)}>
             打印
           </Button>
-          {(record.status === 'pending' || record.status === 'paid') && (
+          {record.status === 'pending' && (
             <Popconfirm title="确定要取消此订单吗？" onConfirm={() => handleCancel(record)}>
               <Button type="link" size="small" danger>
                 取消
@@ -321,16 +186,6 @@ const OrderListPage: React.FC = () => {
       ),
     },
   ];
-
-  // 统计数据
-  const todayOrders = mockOrders.filter((o) => o.createdAt.startsWith('2023-12-23'));
-  const stats = {
-    count: todayOrders.length,
-    quantity: todayOrders.reduce((sum, o) => sum + o.totalQuantity, 0),
-    amount: todayOrders.reduce((sum, o) => sum + o.totalAmount, 0),
-    completed: todayOrders.filter((o) => o.status === 'completed').length,
-    pending: todayOrders.filter((o) => o.status === 'pending').length,
-  };
 
   return (
     <PageContainer
@@ -392,21 +247,35 @@ const OrderListPage: React.FC = () => {
             </Button>,
           ]}
           request={async (params) => {
-            let data = [...mockOrders];
-            if (params.status) {
-              data = data.filter((o) => o.status === params.status);
+            try {
+              const res = await orderApi.getAll({
+                page: params.current,
+                pageSize: params.pageSize,
+                status: params.status,
+                paymentStatus: params.paymentStatus,
+                paymentMethod: params.paymentMethod,
+                orderNo: params.orderNo,
+              });
+              // 更新统计
+              const today = dayjs().format('YYYY-MM-DD');
+              const todayOrders = (res.list || []).filter((o: Order) => 
+                dayjs(o.orderAt).format('YYYY-MM-DD') === today
+              );
+              setStats({
+                count: todayOrders.length,
+                quantity: todayOrders.reduce((sum: number, o: Order) => sum + o.totalQuantity, 0),
+                amount: todayOrders.reduce((sum: number, o: Order) => sum + o.actualAmount, 0),
+                completed: todayOrders.filter((o: Order) => o.status === 'completed').length,
+                pending: todayOrders.filter((o: Order) => o.status === 'pending').length,
+              });
+              return {
+                data: res.list || [],
+                success: true,
+                total: res.total || 0,
+              };
+            } catch (error) {
+              return { data: [], success: false, total: 0 };
             }
-            if (params.paymentMethod) {
-              data = data.filter((o) => o.paymentMethod === params.paymentMethod);
-            }
-            if (params.orderNo) {
-              data = data.filter((o) => o.orderNo.includes(params.orderNo));
-            }
-            return {
-              data,
-              success: true,
-              total: data.length,
-            };
           }}
           columns={columns}
           pagination={{
@@ -437,18 +306,16 @@ const OrderListPage: React.FC = () => {
               <Descriptions.Item label="订单号" span={2}>
                 <Text strong style={{ fontSize: 16, color: '#1890ff' }}>{currentOrder.orderNo}</Text>
               </Descriptions.Item>
-              <Descriptions.Item label="客户">{currentOrder.customer}</Descriptions.Item>
-              <Descriptions.Item label="联系电话">{currentOrder.customerPhone}</Descriptions.Item>
-              <Descriptions.Item label="下单时间">{currentOrder.createdAt}</Descriptions.Item>
+              <Descriptions.Item label="客户">{currentOrder.customerName || currentOrder.customer?.name || '散客'}</Descriptions.Item>
+              <Descriptions.Item label="下单时间">{currentOrder.orderAt}</Descriptions.Item>
               <Descriptions.Item label="完成时间">{currentOrder.completedAt || '-'}</Descriptions.Item>
-              <Descriptions.Item label="操作员">{currentOrder.operator}</Descriptions.Item>
               <Descriptions.Item label="支付方式">
                 <Tag color={paymentMethodMap[currentOrder.paymentMethod]?.color}>
-                  {paymentMethodMap[currentOrder.paymentMethod]?.text}
+                  {paymentMethodMap[currentOrder.paymentMethod]?.text || currentOrder.paymentMethod}
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="订单状态" span={2}>
-                <Badge status={statusMap[currentOrder.status]?.status} text={statusMap[currentOrder.status]?.text} />
+                <Badge status={statusMap[currentOrder.status]?.status} text={statusMap[currentOrder.status]?.text || currentOrder.status} />
               </Descriptions.Item>
               {currentOrder.remark && (
                 <Descriptions.Item label="备注" span={2}>{currentOrder.remark}</Descriptions.Item>
@@ -458,14 +325,14 @@ const OrderListPage: React.FC = () => {
             <Divider />
             <Title level={5}>商品明细</Title>
             <Table
-              dataSource={currentOrder.items}
-              rowKey="productId"
+              dataSource={currentOrder.items || []}
+              rowKey="id"
               pagination={false}
               size="small"
               columns={[
                 { title: '商品', dataIndex: 'productName' },
-                { title: '分类', dataIndex: 'category' },
-                { title: '数量', dataIndex: 'quantity', render: (q) => `${q}只` },
+                { title: '单位', dataIndex: 'unit' },
+                { title: '数量', dataIndex: 'quantity', render: (q, r) => `${q}${r.unit || '只'}` },
                 { title: '单价', dataIndex: 'unitPrice', render: (p) => `¥${p}` },
                 { title: '小计', dataIndex: 'amount', render: (a) => <Text strong>¥{a}</Text> },
               ]}
@@ -480,7 +347,7 @@ const OrderListPage: React.FC = () => {
                   <Table.Summary.Cell index={2} />
                   <Table.Summary.Cell index={3}>
                     <Text strong style={{ color: '#D4380D', fontSize: 18 }}>
-                      ¥{currentOrder.totalAmount}
+                      ¥{currentOrder.actualAmount}
                     </Text>
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
@@ -489,12 +356,17 @@ const OrderListPage: React.FC = () => {
 
             <Divider />
             <Row gutter={16}>
-              <Col span={12}>
+              <Col span={8}>
                 <Text type="secondary">应付金额</Text>
                 <br />
                 <Title level={4} style={{ margin: 0 }}>¥{currentOrder.totalAmount}</Title>
               </Col>
-              <Col span={12}>
+              <Col span={8}>
+                <Text type="secondary">优惠金额</Text>
+                <br />
+                <Title level={4} style={{ margin: 0, color: '#faad14' }}>¥{currentOrder.discountAmount || 0}</Title>
+              </Col>
+              <Col span={8}>
                 <Text type="secondary">实付金额</Text>
                 <br />
                 <Title level={4} style={{ margin: 0, color: '#52c41a' }}>¥{currentOrder.paidAmount}</Title>
@@ -508,4 +380,3 @@ const OrderListPage: React.FC = () => {
 };
 
 export default OrderListPage;
-

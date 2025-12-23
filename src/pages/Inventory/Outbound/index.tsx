@@ -25,126 +25,48 @@ import {
   Typography,
 } from 'antd';
 import dayjs from 'dayjs';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { inventoryApi, customerApi, productApi, InventoryOutbound, Customer, Product } from '@/services/api';
 import styles from './index.less';
 
 const { Text, Title } = Typography;
 
-interface OutboundRecord {
-  id: string;
-  outboundNo: string;
-  customer: string;
-  customerId: string;
-  totalQuantity: number;
-  totalAmount: number;
-  operator: string;
-  status: 'pending' | 'completed' | 'cancelled';
-  createdAt: string;
-  completedAt?: string;
-  remark?: string;
-  items: OutboundItem[];
-}
-
 interface OutboundItem {
-  productId: string;
+  productId: number;
   productName: string;
-  category: string;
   quantity: number;
+  weight?: number;
   unitPrice: number;
   amount: number;
 }
-
-// 模拟出库记录
-const mockOutboundRecords: OutboundRecord[] = [
-  {
-    id: '1',
-    outboundNo: 'OUT202312230001',
-    customer: '王府酒家',
-    customerId: 'C001',
-    totalQuantity: 35,
-    totalAmount: 1575,
-    operator: '张三',
-    status: 'completed',
-    createdAt: '2023-12-23 08:30:00',
-    completedAt: '2023-12-23 08:45:00',
-    items: [
-      { productId: 'P001', productName: '散养土鸡', category: '鸡类', quantity: 20, unitPrice: 45, amount: 900 },
-      { productId: 'P006', productName: '肉鸽', category: '鸽类', quantity: 15, unitPrice: 45, amount: 675 },
-    ],
-  },
-  {
-    id: '2',
-    outboundNo: 'OUT202312230002',
-    customer: '福满楼',
-    customerId: 'C002',
-    totalQuantity: 50,
-    totalAmount: 2400,
-    operator: '张三',
-    status: 'completed',
-    createdAt: '2023-12-23 09:15:00',
-    completedAt: '2023-12-23 09:30:00',
-    items: [
-      { productId: 'P002', productName: '三黄鸡', category: '鸡类', quantity: 30, unitPrice: 35, amount: 1050 },
-      { productId: 'P004', productName: '麻鸭', category: '鸭类', quantity: 20, unitPrice: 38, amount: 760 },
-    ],
-  },
-  {
-    id: '3',
-    outboundNo: 'OUT202312230003',
-    customer: '李氏餐馆',
-    customerId: 'C003',
-    totalQuantity: 25,
-    totalAmount: 1450,
-    operator: '王五',
-    status: 'pending',
-    createdAt: '2023-12-23 10:00:00',
-    items: [
-      { productId: 'P003', productName: '乌鸡', category: '鸡类', quantity: 15, unitPrice: 58, amount: 870 },
-      { productId: 'P005', productName: '番鸭', category: '鸭类', quantity: 10, unitPrice: 48, amount: 480 },
-    ],
-  },
-  {
-    id: '4',
-    outboundNo: 'OUT202312220001',
-    customer: '张记酒楼',
-    customerId: 'C004',
-    totalQuantity: 80,
-    totalAmount: 10240,
-    operator: '张三',
-    status: 'completed',
-    createdAt: '2023-12-22 14:30:00',
-    completedAt: '2023-12-22 14:50:00',
-    items: [
-      { productId: 'P007', productName: '大白鹅', category: '鹅类', quantity: 80, unitPrice: 128, amount: 10240 },
-    ],
-  },
-];
-
-const customers = [
-  { value: 'C001', label: '王府酒家' },
-  { value: 'C002', label: '福满楼' },
-  { value: 'C003', label: '李氏餐馆' },
-  { value: 'C004', label: '张记酒楼' },
-  { value: 'C005', label: '赵家菜馆' },
-];
-
-const products = [
-  { value: 'P001', label: '散养土鸡', category: '鸡类', price: 45, stock: 156 },
-  { value: 'P002', label: '三黄鸡', category: '鸡类', price: 35, stock: 280 },
-  { value: 'P003', label: '乌鸡', category: '鸡类', price: 58, stock: 42 },
-  { value: 'P004', label: '麻鸭', category: '鸭类', price: 38, stock: 18 },
-  { value: 'P005', label: '番鸭', category: '鸭类', price: 48, stock: 95 },
-  { value: 'P006', label: '肉鸽', category: '鸽类', price: 45, stock: 165 },
-  { value: 'P007', label: '大白鹅', category: '鹅类', price: 128, stock: 85 },
-];
 
 const OutboundPage: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [modalVisible, setModalVisible] = useState(false);
   const [detailVisible, setDetailVisible] = useState(false);
-  const [currentRecord, setCurrentRecord] = useState<OutboundRecord | null>(null);
+  const [currentRecord, setCurrentRecord] = useState<InventoryOutbound | null>(null);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [form] = Form.useForm();
   const [outboundItems, setOutboundItems] = useState<OutboundItem[]>([]);
+  const [stats, setStats] = useState({ count: 0, quantity: 0, amount: 0 });
+
+  useEffect(() => {
+    loadBaseData();
+  }, []);
+
+  const loadBaseData = async () => {
+    try {
+      const [customersRes, productsRes] = await Promise.all([
+        customerApi.getAll({ pageSize: 1000 }),
+        productApi.getActive(),
+      ]);
+      setCustomers(customersRes.list || []);
+      setProducts(productsRes || []);
+    } catch (error) {
+      console.error('加载基础数据失败:', error);
+    }
+  };
 
   const handleAdd = () => {
     form.resetFields();
@@ -152,7 +74,7 @@ const OutboundPage: React.FC = () => {
     setModalVisible(true);
   };
 
-  const handleView = (record: OutboundRecord) => {
+  const handleView = (record: InventoryOutbound) => {
     setCurrentRecord(record);
     setDetailVisible(true);
   };
@@ -161,9 +83,8 @@ const OutboundPage: React.FC = () => {
     setOutboundItems([
       ...outboundItems,
       {
-        productId: '',
+        productId: 0,
         productName: '',
-        category: '',
         quantity: 1,
         unitPrice: 0,
         amount: 0,
@@ -186,10 +107,9 @@ const OutboundPage: React.FC = () => {
     }
 
     if (field === 'productId') {
-      const product = products.find((p) => p.value === value);
+      const product = products.find((p) => p.id === value);
       if (product) {
-        newItems[index].productName = product.label;
-        newItems[index].category = product.category;
+        newItems[index].productName = product.name;
         newItems[index].unitPrice = product.price;
         newItems[index].amount = newItems[index].quantity * product.price;
       }
@@ -200,42 +120,36 @@ const OutboundPage: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
-      await form.validateFields();
+      const values = await form.validateFields();
       if (outboundItems.length === 0) {
         message.error('请至少添加一项出库商品');
         return;
       }
-      // 检查库存
+      
+      // 逐个创建出库记录
       for (const item of outboundItems) {
-        const product = products.find((p) => p.value === item.productId);
-        if (product && item.quantity > product.stock) {
-          message.error(`${product.label} 库存不足，当前库存: ${product.stock}只`);
-          return;
-        }
+        await inventoryApi.createOutbound({
+          productId: item.productId,
+          quantity: item.quantity,
+          weight: item.weight,
+          type: 'sale',
+          reason: values.remark,
+        });
       }
+      
       message.success('出库单创建成功');
       setModalVisible(false);
       actionRef.current?.reload();
     } catch (error) {
-      console.error('验证失败:', error);
+      console.error('创建失败:', error);
+      message.error('创建出库单失败');
     }
-  };
-
-  const handleConfirm = (record: OutboundRecord) => {
-    Modal.confirm({
-      title: '确认出库',
-      content: `确定要确认出库单 ${record.outboundNo} 吗？确认后库存将减少。`,
-      onOk: () => {
-        message.success('出库确认成功');
-        actionRef.current?.reload();
-      },
-    });
   };
 
   const totalQuantity = outboundItems.reduce((sum, item) => sum + item.quantity, 0);
   const totalAmount = outboundItems.reduce((sum, item) => sum + item.amount, 0);
 
-  const columns: ProColumns<OutboundRecord>[] = [
+  const columns: ProColumns<InventoryOutbound>[] = [
     {
       title: '出库单号',
       dataIndex: 'outboundNo',
@@ -243,45 +157,33 @@ const OutboundPage: React.FC = () => {
       render: (text) => <Text strong style={{ color: '#D4380D' }}>{text}</Text>,
     },
     {
-      title: '客户',
-      dataIndex: 'customer',
-      key: 'customer',
+      title: '商品',
+      key: 'product',
+      search: false,
+      render: (_, record) => <Text>{record.product?.name || '-'}</Text>,
     },
     {
       title: '出库数量',
-      dataIndex: 'totalQuantity',
-      key: 'totalQuantity',
+      dataIndex: 'quantity',
+      key: 'quantity',
       search: false,
       render: (quantity) => <Text strong>{quantity}只</Text>,
     },
     {
-      title: '销售金额',
-      dataIndex: 'totalAmount',
-      key: 'totalAmount',
-      search: false,
-      render: (amount) => <Text strong style={{ color: '#52c41a' }}>¥{amount?.toLocaleString()}</Text>,
-    },
-    {
-      title: '操作员',
-      dataIndex: 'operator',
-      key: 'operator',
-      search: false,
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
+      title: '类型',
+      dataIndex: 'type',
+      key: 'type',
       valueType: 'select',
       valueEnum: {
-        pending: { text: '待确认', status: 'Warning' },
-        completed: { text: '已完成', status: 'Success' },
-        cancelled: { text: '已取消', status: 'Default' },
+        sale: { text: '销售出库', status: 'Success' },
+        loss: { text: '损耗', status: 'Error' },
+        adjust: { text: '调整出库', status: 'Default' },
       },
     },
     {
-      title: '创建时间',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
+      title: '出库时间',
+      dataIndex: 'outboundAt',
+      key: 'outboundAt',
       valueType: 'dateTime',
       search: false,
     },
@@ -294,11 +196,6 @@ const OutboundPage: React.FC = () => {
           <Button type="link" onClick={() => handleView(record)}>
             查看
           </Button>
-          {record.status === 'pending' && (
-            <Button type="link" onClick={() => handleConfirm(record)}>
-              确认出库
-            </Button>
-          )}
           <Button type="link" icon={<PrinterOutlined />}>
             打印
           </Button>
@@ -306,17 +203,6 @@ const OutboundPage: React.FC = () => {
       ),
     },
   ];
-
-  const todayStats = {
-    count: mockOutboundRecords.filter((r) => r.createdAt.startsWith('2023-12-23')).length,
-    quantity: mockOutboundRecords
-      .filter((r) => r.createdAt.startsWith('2023-12-23'))
-      .reduce((sum, r) => sum + r.totalQuantity, 0),
-    amount: mockOutboundRecords
-      .filter((r) => r.createdAt.startsWith('2023-12-23'))
-      .reduce((sum, r) => sum + r.totalAmount, 0),
-    pending: mockOutboundRecords.filter((r) => r.status === 'pending').length,
-  };
 
   return (
     <PageContainer
@@ -327,30 +213,25 @@ const OutboundPage: React.FC = () => {
     >
       {/* 统计卡片 */}
       <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col xs={12} sm={6}>
+        <Col xs={12} sm={8}>
           <Card bordered={false} className={styles.statCard}>
-            <Statistic title="今日出库单" value={todayStats.count} suffix="单" />
+            <Statistic title="今日出库单" value={stats.count} suffix="单" />
           </Card>
         </Col>
-        <Col xs={12} sm={6}>
+        <Col xs={12} sm={8}>
           <Card bordered={false} className={styles.statCard}>
-            <Statistic title="今日出库数量" value={todayStats.quantity} suffix="只" valueStyle={{ color: '#ff4d4f' }} />
+            <Statistic title="今日出库数量" value={stats.quantity} suffix="只" valueStyle={{ color: '#ff4d4f' }} />
           </Card>
         </Col>
-        <Col xs={12} sm={6}>
+        <Col xs={24} sm={8}>
           <Card bordered={false} className={styles.statCard}>
-            <Statistic title="今日销售金额" value={todayStats.amount} precision={0} prefix="¥" valueStyle={{ color: '#52c41a' }} />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6}>
-          <Card bordered={false} className={styles.statCard}>
-            <Statistic title="待确认" value={todayStats.pending} suffix="单" valueStyle={{ color: '#faad14' }} />
+            <Statistic title="今日销售金额" value={stats.amount} precision={0} prefix="¥" valueStyle={{ color: '#52c41a' }} />
           </Card>
         </Col>
       </Row>
 
       <Card bordered={false}>
-        <ProTable<OutboundRecord>
+        <ProTable<InventoryOutbound>
           headerTitle="出库记录"
           actionRef={actionRef}
           rowKey="id"
@@ -362,11 +243,32 @@ const OutboundPage: React.FC = () => {
               新建出库单
             </Button>,
           ]}
-          request={async () => ({
-            data: mockOutboundRecords,
-            success: true,
-            total: mockOutboundRecords.length,
-          })}
+          request={async (params) => {
+            try {
+              const res = await inventoryApi.getOutbounds({
+                page: params.current,
+                pageSize: params.pageSize,
+                type: params.type,
+              });
+              // 更新统计
+              const today = dayjs().format('YYYY-MM-DD');
+              const todayRecords = (res.list || []).filter((r: InventoryOutbound) => 
+                dayjs(r.outboundAt).format('YYYY-MM-DD') === today
+              );
+              setStats({
+                count: todayRecords.length,
+                quantity: todayRecords.reduce((sum: number, r: InventoryOutbound) => sum + r.quantity, 0),
+                amount: 0, // 出库没有金额
+              });
+              return {
+                data: res.list || [],
+                success: true,
+                total: res.total || 0,
+              };
+            } catch (error) {
+              return { data: [], success: false, total: 0 };
+            }
+          }}
           columns={columns}
           pagination={{
             pageSize: 10,
@@ -386,21 +288,12 @@ const OutboundPage: React.FC = () => {
         <Form form={form} layout="vertical">
           <Row gutter={16}>
             <Col span={8}>
-              <Form.Item
-                name="customerId"
-                label="客户"
-                rules={[{ required: true, message: '请选择客户' }]}
-              >
-                <Select options={customers} placeholder="请选择客户" />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
               <Form.Item name="outboundDate" label="出库日期" initialValue={dayjs()}>
                 <DatePicker style={{ width: '100%' }} />
               </Form.Item>
             </Col>
-            <Col span={8}>
-              <Form.Item name="remark" label="备注">
+            <Col span={16}>
+              <Form.Item name="remark" label="备注/原因">
                 <Input placeholder="请输入备注" />
               </Form.Item>
             </Col>
@@ -418,14 +311,11 @@ const OutboundPage: React.FC = () => {
             {
               title: '商品',
               dataIndex: 'productId',
-              width: 180,
+              width: 200,
               render: (value, _, index) => (
                 <Select
-                  value={value}
-                  options={products.map((p) => ({
-                    ...p,
-                    label: `${p.label} (库存: ${p.stock})`,
-                  }))}
+                  value={value || undefined}
+                  options={products.map(p => ({ label: p.name, value: p.id }))}
                   placeholder="选择商品"
                   style={{ width: '100%' }}
                   onChange={(v) => handleItemChange(index, 'productId', v)}
@@ -433,26 +323,17 @@ const OutboundPage: React.FC = () => {
               ),
             },
             {
-              title: '分类',
-              dataIndex: 'category',
-              width: 80,
-            },
-            {
               title: '数量(只)',
               dataIndex: 'quantity',
               width: 120,
-              render: (value, record, index) => {
-                const product = products.find((p) => p.value === record.productId);
-                return (
-                  <InputNumber
-                    value={value}
-                    min={1}
-                    max={product?.stock}
-                    style={{ width: '100%' }}
-                    onChange={(v) => handleItemChange(index, 'quantity', v)}
-                  />
-                );
-              },
+              render: (value, _, index) => (
+                <InputNumber
+                  value={value}
+                  min={1}
+                  style={{ width: '100%' }}
+                  onChange={(v) => handleItemChange(index, 'quantity', v || 0)}
+                />
+              ),
             },
             {
               title: '单价(元)',
@@ -464,7 +345,7 @@ const OutboundPage: React.FC = () => {
                   min={0}
                   precision={2}
                   style={{ width: '100%' }}
-                  onChange={(v) => handleItemChange(index, 'unitPrice', v)}
+                  onChange={(v) => handleItemChange(index, 'unitPrice', v || 0)}
                 />
               ),
             },
@@ -472,7 +353,7 @@ const OutboundPage: React.FC = () => {
               title: '金额',
               dataIndex: 'amount',
               width: 100,
-              render: (amount) => <Text strong>¥{amount?.toFixed(2)}</Text>,
+              render: (amount) => <Text strong>¥{(amount || 0).toFixed(2)}</Text>,
             },
             {
               title: '操作',
@@ -511,7 +392,7 @@ const OutboundPage: React.FC = () => {
         open={detailVisible}
         onCancel={() => setDetailVisible(false)}
         footer={null}
-        width={700}
+        width={600}
       >
         {currentRecord && (
           <div className={styles.detail}>
@@ -522,62 +403,31 @@ const OutboundPage: React.FC = () => {
                 <Text strong style={{ fontSize: 16 }}>{currentRecord.outboundNo}</Text>
               </Col>
               <Col span={12}>
-                <Text type="secondary">状态</Text>
+                <Text type="secondary">商品</Text>
                 <br />
-                <Tag color={currentRecord.status === 'completed' ? 'success' : 'warning'}>
-                  {currentRecord.status === 'completed' ? '已完成' : '待确认'}
-                </Tag>
+                <Text strong>{currentRecord.product?.name || '-'}</Text>
               </Col>
               <Col span={12}>
-                <Text type="secondary">客户</Text>
+                <Text type="secondary">出库数量</Text>
                 <br />
-                <Text strong>{currentRecord.customer}</Text>
+                <Text strong>{currentRecord.quantity}只</Text>
               </Col>
               <Col span={12}>
-                <Text type="secondary">操作员</Text>
+                <Text type="secondary">类型</Text>
                 <br />
-                <Text strong>{currentRecord.operator}</Text>
+                <Tag color="error">{currentRecord.type}</Tag>
               </Col>
               <Col span={12}>
-                <Text type="secondary">创建时间</Text>
+                <Text type="secondary">出库时间</Text>
                 <br />
-                <Text>{currentRecord.createdAt}</Text>
+                <Text>{currentRecord.outboundAt}</Text>
               </Col>
               <Col span={12}>
-                <Text type="secondary">完成时间</Text>
+                <Text type="secondary">原因</Text>
                 <br />
-                <Text>{currentRecord.completedAt || '-'}</Text>
+                <Text>{currentRecord.reason || '-'}</Text>
               </Col>
             </Row>
-            <Divider />
-            <Title level={5}>商品明细</Title>
-            <Table
-              dataSource={currentRecord.items}
-              rowKey="productId"
-              pagination={false}
-              size="small"
-              columns={[
-                { title: '商品', dataIndex: 'productName' },
-                { title: '分类', dataIndex: 'category' },
-                { title: '数量', dataIndex: 'quantity', render: (q) => `${q}只` },
-                { title: '单价', dataIndex: 'unitPrice', render: (p) => `¥${p}` },
-                { title: '金额', dataIndex: 'amount', render: (a) => <Text strong>¥{a}</Text> },
-              ]}
-              summary={() => (
-                <Table.Summary.Row>
-                  <Table.Summary.Cell index={0} colSpan={2}>
-                    <Text strong>合计</Text>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={1}>
-                    <Text strong>{currentRecord.totalQuantity}只</Text>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={2} />
-                  <Table.Summary.Cell index={3}>
-                    <Text strong style={{ color: '#52c41a' }}>¥{currentRecord.totalAmount}</Text>
-                  </Table.Summary.Cell>
-                </Table.Summary.Row>
-              )}
-            />
           </div>
         )}
       </Modal>
@@ -586,4 +436,3 @@ const OutboundPage: React.FC = () => {
 };
 
 export default OutboundPage;
-

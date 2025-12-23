@@ -29,123 +29,20 @@ import {
   Typography,
 } from 'antd';
 import dayjs from 'dayjs';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { purchaseApi, supplierApi, productApi, PurchaseOrder } from '@/services/api';
 import styles from './index.less';
 
 const { Text, Title } = Typography;
 
-interface PurchaseOrder {
-  id: string;
-  orderNo: string;
-  supplier: string;
-  supplierId: string;
-  totalQuantity: number;
-  totalAmount: number;
-  status: 'draft' | 'pending' | 'approved' | 'completed' | 'cancelled';
-  creator: string;
-  approver?: string;
-  createdAt: string;
-  approvedAt?: string;
-  completedAt?: string;
-  remark?: string;
-  items: PurchaseItem[];
-}
-
 interface PurchaseItem {
-  productId: string;
+  productId: number | string;
   productName: string;
   category: string;
   quantity: number;
   unitPrice: number;
   amount: number;
 }
-
-const mockPurchaseOrders: PurchaseOrder[] = [
-  {
-    id: '1',
-    orderNo: 'PO202312230001',
-    supplier: '盐城绿源农场',
-    supplierId: 'S001',
-    totalQuantity: 200,
-    totalAmount: 7600,
-    status: 'completed',
-    creator: '李四',
-    approver: '张总',
-    createdAt: '2023-12-23 08:00:00',
-    approvedAt: '2023-12-23 08:30:00',
-    completedAt: '2023-12-23 10:00:00',
-    items: [
-      { productId: 'P001', productName: '散养土鸡', category: '鸡类', quantity: 120, unitPrice: 32, amount: 3840 },
-      { productId: 'P003', productName: '乌鸡', category: '鸡类', quantity: 80, unitPrice: 47, amount: 3760 },
-    ],
-  },
-  {
-    id: '2',
-    orderNo: 'PO202312230002',
-    supplier: '金华鸽业有限公司',
-    supplierId: 'S003',
-    totalQuantity: 300,
-    totalAmount: 9600,
-    status: 'approved',
-    creator: '王五',
-    approver: '张总',
-    createdAt: '2023-12-23 09:30:00',
-    approvedAt: '2023-12-23 10:00:00',
-    items: [
-      { productId: 'P006', productName: '肉鸽', category: '鸽类', quantity: 300, unitPrice: 32, amount: 9600 },
-    ],
-  },
-  {
-    id: '3',
-    orderNo: 'PO202312230003',
-    supplier: '高邮鸭业养殖合作社',
-    supplierId: 'S004',
-    totalQuantity: 150,
-    totalAmount: 4500,
-    status: 'pending',
-    creator: '李四',
-    createdAt: '2023-12-23 11:00:00',
-    items: [
-      { productId: 'P004', productName: '麻鸭', category: '鸭类', quantity: 100, unitPrice: 28, amount: 2800 },
-      { productId: 'P005', productName: '番鸭', category: '鸭类', quantity: 50, unitPrice: 34, amount: 1700 },
-    ],
-  },
-  {
-    id: '4',
-    orderNo: 'PO202312220001',
-    supplier: '清远鸡业有限公司',
-    supplierId: 'S002',
-    totalQuantity: 250,
-    totalAmount: 6250,
-    status: 'completed',
-    creator: '王五',
-    approver: '张总',
-    createdAt: '2023-12-22 14:00:00',
-    approvedAt: '2023-12-22 14:30:00',
-    completedAt: '2023-12-22 18:00:00',
-    items: [
-      { productId: 'P002', productName: '三黄鸡', category: '鸡类', quantity: 250, unitPrice: 25, amount: 6250 },
-    ],
-  },
-];
-
-const suppliers = [
-  { value: 'S001', label: '盐城绿源农场' },
-  { value: 'S002', label: '清远鸡业有限公司' },
-  { value: 'S003', label: '金华鸽业有限公司' },
-  { value: 'S004', label: '高邮鸭业养殖合作社' },
-  { value: 'S005', label: '皖西白鹅养殖场' },
-];
-
-const products = [
-  { value: 'P001', label: '散养土鸡', category: '鸡类', price: 32 },
-  { value: 'P002', label: '三黄鸡', category: '鸡类', price: 25 },
-  { value: 'P003', label: '乌鸡', category: '鸡类', price: 47 },
-  { value: 'P004', label: '麻鸭', category: '鸭类', price: 28 },
-  { value: 'P005', label: '番鸭', category: '鸭类', price: 34 },
-  { value: 'P006', label: '肉鸽', category: '鸽类', price: 32 },
-  { value: 'P007', label: '大白鹅', category: '鹅类', price: 95 },
-];
 
 const PurchasePage: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -154,6 +51,38 @@ const PurchasePage: React.FC = () => {
   const [currentOrder, setCurrentOrder] = useState<PurchaseOrder | null>(null);
   const [form] = Form.useForm();
   const [purchaseItems, setPurchaseItems] = useState<PurchaseItem[]>([]);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({ count: 0, quantity: 0, amount: 0, pending: 0 });
+
+  const fetchSuppliers = async () => {
+    try {
+      const data = await supplierApi.getActive();
+      setSuppliers((data || []).map((s: any) => ({ value: s.id, label: s.name })));
+    } catch (error) {
+      console.error('获取供应商失败:', error);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const data = await productApi.getActive();
+      setProducts((data || []).map((p: any) => ({
+        value: p.id,
+        label: p.name,
+        category: p.category?.name || '',
+        price: p.costPrice || p.price || 0,
+      })));
+    } catch (error) {
+      console.error('获取商品失败:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchSuppliers();
+    fetchProducts();
+  }, []);
 
   const handleAdd = () => {
     form.resetFields();
@@ -209,11 +138,21 @@ const PurchasePage: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
-      await form.validateFields();
+      const values = await form.validateFields();
       if (purchaseItems.length === 0) {
         message.error('请至少添加一项采购商品');
         return;
       }
+      await purchaseApi.create({
+        supplierId: values.supplierId,
+        expectedAt: values.expectedDate?.format('YYYY-MM-DD'),
+        remark: values.remark,
+        items: purchaseItems.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        })),
+      });
       message.success('采购单创建成功');
       setModalVisible(false);
       actionRef.current?.reload();
@@ -225,10 +164,15 @@ const PurchasePage: React.FC = () => {
   const handleApprove = (record: PurchaseOrder) => {
     Modal.confirm({
       title: '审批采购单',
-      content: `确定要审批通过采购单 ${record.orderNo} 吗？`,
-      onOk: () => {
-        message.success('审批通过');
-        actionRef.current?.reload();
+      content: `确定要审批通过采购单 ${record.purchaseNo} 吗？`,
+      onOk: async () => {
+        try {
+          await purchaseApi.confirm(record.id);
+          message.success('审批通过');
+          actionRef.current?.reload();
+        } catch (error) {
+          message.error('审批失败');
+        }
       },
     });
   };
@@ -236,10 +180,18 @@ const PurchasePage: React.FC = () => {
   const handleComplete = (record: PurchaseOrder) => {
     Modal.confirm({
       title: '确认到货',
-      content: `确定采购单 ${record.orderNo} 已到货入库吗？`,
-      onOk: () => {
-        message.success('采购完成');
-        actionRef.current?.reload();
+      content: `确定采购单 ${record.purchaseNo} 已到货入库吗？`,
+      onOk: async () => {
+        try {
+          await purchaseApi.receive(record.id, record.items.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+          })));
+          message.success('采购完成');
+          actionRef.current?.reload();
+        } catch (error) {
+          message.error('操作失败');
+        }
       },
     });
   };
@@ -258,14 +210,14 @@ const PurchasePage: React.FC = () => {
   const columns: ProColumns<PurchaseOrder>[] = [
     {
       title: '采购单号',
-      dataIndex: 'orderNo',
-      key: 'orderNo',
+      dataIndex: 'purchaseNo',
+      key: 'purchaseNo',
       render: (text) => <Text strong style={{ color: '#52c41a' }}>{text}</Text>,
     },
     {
       title: '供应商',
-      dataIndex: 'supplier',
       key: 'supplier',
+      render: (_, record) => record.supplier?.name || '-',
     },
     {
       title: '采购数量',
@@ -296,10 +248,15 @@ const PurchasePage: React.FC = () => {
       },
     },
     {
-      title: '创建人',
-      dataIndex: 'creator',
-      key: 'creator',
+      title: '付款状态',
+      dataIndex: 'paymentStatus',
+      key: 'paymentStatus',
       search: false,
+      valueEnum: {
+        unpaid: { text: '未付款', status: 'Error' },
+        partial: { text: '部分付款', status: 'Warning' },
+        paid: { text: '已付款', status: 'Success' },
+      },
     },
     {
       title: '创建时间',
@@ -336,16 +293,7 @@ const PurchasePage: React.FC = () => {
     },
   ];
 
-  const todayStats = {
-    count: mockPurchaseOrders.filter((o) => o.createdAt.startsWith('2023-12-23')).length,
-    quantity: mockPurchaseOrders
-      .filter((o) => o.createdAt.startsWith('2023-12-23'))
-      .reduce((sum, o) => sum + o.totalQuantity, 0),
-    amount: mockPurchaseOrders
-      .filter((o) => o.createdAt.startsWith('2023-12-23'))
-      .reduce((sum, o) => sum + o.totalAmount, 0),
-    pending: mockPurchaseOrders.filter((o) => o.status === 'pending').length,
-  };
+  const todayStats = stats;
 
   return (
     <PageContainer
@@ -390,11 +338,36 @@ const PurchasePage: React.FC = () => {
               新建采购单
             </Button>,
           ]}
-          request={async () => ({
-            data: mockPurchaseOrders,
-            success: true,
-            total: mockPurchaseOrders.length,
-          })}
+          request={async (params) => {
+            setLoading(true);
+            try {
+              const result = await purchaseApi.getAll({
+                page: params.current,
+                pageSize: params.pageSize,
+                status: params.status,
+              });
+              const list = result?.list || [];
+              // 计算统计
+              const todayStr = new Date().toISOString().split('T')[0];
+              const todayOrders = list.filter((o: any) => o.createdAt?.startsWith(todayStr));
+              setStats({
+                count: todayOrders.length,
+                quantity: todayOrders.reduce((sum: number, o: any) => sum + (o.totalQuantity || 0), 0),
+                amount: todayOrders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0),
+                pending: list.filter((o: any) => o.status === 'pending').length,
+              });
+              return {
+                data: list,
+                success: true,
+                total: result?.total || 0,
+              };
+            } catch (error) {
+              console.error('获取采购单失败:', error);
+              return { data: [], success: false, total: 0 };
+            } finally {
+              setLoading(false);
+            }
+          }}
           columns={columns}
           pagination={{
             pageSize: 10,
@@ -538,34 +511,32 @@ const PurchasePage: React.FC = () => {
           <div className={styles.orderDetail}>
             <Steps
               current={
-                currentOrder.status === 'draft' ? 0 :
-                currentOrder.status === 'pending' ? 1 :
-                currentOrder.status === 'approved' ? 2 :
-                currentOrder.status === 'completed' ? 3 : 0
+                currentOrder.status === 'pending' ? 0 :
+                currentOrder.status === 'confirmed' ? 1 :
+                currentOrder.status === 'received' ? 2 : 0
               }
               items={[
-                { title: '创建' },
-                { title: '待审批' },
-                { title: '已审批' },
-                { title: '已完成' },
+                { title: '待确认' },
+                { title: '已确认' },
+                { title: '已到货' },
               ]}
               style={{ marginBottom: 24 }}
             />
 
             <Descriptions bordered size="small" column={2}>
               <Descriptions.Item label="采购单号" span={2}>
-                <Text strong style={{ fontSize: 16, color: '#52c41a' }}>{currentOrder.orderNo}</Text>
+                <Text strong style={{ fontSize: 16, color: '#52c41a' }}>{currentOrder.purchaseNo}</Text>
               </Descriptions.Item>
-              <Descriptions.Item label="供应商">{currentOrder.supplier}</Descriptions.Item>
+              <Descriptions.Item label="供应商">{currentOrder.supplier?.name || '-'}</Descriptions.Item>
               <Descriptions.Item label="状态">
                 <Tag color={statusMap[currentOrder.status]?.color}>
                   {statusMap[currentOrder.status]?.text}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="创建人">{currentOrder.creator}</Descriptions.Item>
-              <Descriptions.Item label="审批人">{currentOrder.approver || '-'}</Descriptions.Item>
+              <Descriptions.Item label="采购数量">{currentOrder.totalQuantity}只</Descriptions.Item>
+              <Descriptions.Item label="采购金额">¥{currentOrder.totalAmount?.toLocaleString()}</Descriptions.Item>
               <Descriptions.Item label="创建时间">{currentOrder.createdAt}</Descriptions.Item>
-              <Descriptions.Item label="完成时间">{currentOrder.completedAt || '-'}</Descriptions.Item>
+              <Descriptions.Item label="到货时间">{currentOrder.receivedAt || '-'}</Descriptions.Item>
             </Descriptions>
 
             <Divider />

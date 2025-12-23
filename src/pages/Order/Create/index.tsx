@@ -3,7 +3,6 @@ import {
   DeleteOutlined,
   MinusOutlined,
   PlusOutlined,
-  PrinterOutlined,
   SearchOutlined,
   ShoppingCartOutlined,
   UserOutlined,
@@ -24,65 +23,25 @@ import {
   Modal,
   Radio,
   Row,
-  Select,
   Space,
-  Statistic,
   Table,
-  Tabs,
   Tag,
   Typography,
 } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { productApi, customerApi, orderApi, Product, Customer } from '@/services/api';
 import styles from './index.less';
 
 const { Text, Title } = Typography;
-
-interface Product {
-  id: string;
-  name: string;
-  category: string;
-  price: number;
-  stock: number;
-  unit: string;
-  image: string;
-}
 
 interface CartItem extends Product {
   quantity: number;
   subtotal: number;
 }
 
-interface Customer {
-  id: string;
-  name: string;
-  phone: string;
-  type: string;
-  credit: number;
-}
-
-// 商品数据
-const products: Product[] = [
-  { id: 'P001', name: '散养土鸡', category: '鸡类', price: 45, stock: 156, unit: '只', image: '🐔' },
-  { id: 'P002', name: '三黄鸡', category: '鸡类', price: 35, stock: 280, unit: '只', image: '🐔' },
-  { id: 'P003', name: '乌鸡', category: '鸡类', price: 58, stock: 42, unit: '只', image: '🐔' },
-  { id: 'P004', name: '麻鸭', category: '鸭类', price: 38, stock: 18, unit: '只', image: '🦆' },
-  { id: 'P005', name: '番鸭', category: '鸭类', price: 48, stock: 95, unit: '只', image: '🦆' },
-  { id: 'P006', name: '肉鸽', category: '鸽类', price: 45, stock: 165, unit: '只', image: '🕊️' },
-  { id: 'P007', name: '大白鹅', category: '鹅类', price: 128, stock: 85, unit: '只', image: '🦢' },
-  { id: 'P008', name: '珍珠鸡', category: '鸡类', price: 68, stock: 35, unit: '只', image: '🐔' },
-];
-
-const customers: Customer[] = [
-  { id: 'C001', name: '王府酒家', phone: '13800138001', type: 'VIP', credit: 50000 },
-  { id: 'C002', name: '福满楼', phone: '13800138002', type: '普通', credit: 20000 },
-  { id: 'C003', name: '李氏餐馆', phone: '13800138003', type: 'VIP', credit: 80000 },
-  { id: 'C004', name: '张记酒楼', phone: '13800138004', type: '普通', credit: 30000 },
-  { id: 'C005', name: '赵家菜馆', phone: '13800138005', type: 'VIP', credit: 100000 },
-];
-
-const categories = ['全部', '鸡类', '鸭类', '鸽类', '鹅类'];
-
 const OrderCreatePage: React.FC = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('全部');
   const [searchText, setSearchText] = useState('');
@@ -91,14 +50,34 @@ const OrderCreatePage: React.FC = () => {
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'credit' | 'wechat' | 'alipay'>('cash');
   const [receivedAmount, setReceivedAmount] = useState<number>(0);
-  const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [productsRes, customersRes] = await Promise.all([
+        productApi.getActive(),
+        customerApi.getAll({ pageSize: 1000 }),
+      ]);
+      setProducts(productsRes || []);
+      setCustomers(customersRes.list || []);
+    } catch (error) {
+      console.error('加载数据失败:', error);
+    }
+  };
+
+  // 获取分类列表
+  const categories = ['全部', ...new Set(products.map(p => p.category?.name).filter(Boolean))];
 
   // 过滤商品
   const filteredProducts = products.filter((p) => {
-    const matchCategory = selectedCategory === '全部' || p.category === selectedCategory;
+    const matchCategory = selectedCategory === '全部' || p.category?.name === selectedCategory;
     const matchSearch = !searchText || 
       p.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      p.id.toLowerCase().includes(searchText.toLowerCase());
+      (p.code && p.code.toLowerCase().includes(searchText.toLowerCase()));
     return matchCategory && matchSearch;
   });
 
@@ -106,10 +85,6 @@ const OrderCreatePage: React.FC = () => {
   const addToCart = (product: Product) => {
     const existingItem = cart.find((item) => item.id === product.id);
     if (existingItem) {
-      if (existingItem.quantity >= product.stock) {
-        message.warning('库存不足');
-        return;
-      }
       setCart(
         cart.map((item) =>
           item.id === product.id
@@ -118,21 +93,12 @@ const OrderCreatePage: React.FC = () => {
         )
       );
     } else {
-      if (product.stock === 0) {
-        message.warning('该商品已无库存');
-        return;
-      }
       setCart([...cart, { ...product, quantity: 1, subtotal: product.price }]);
     }
   };
 
   // 更新购物车数量
-  const updateQuantity = (productId: string, quantity: number) => {
-    const product = products.find((p) => p.id === productId);
-    if (product && quantity > product.stock) {
-      message.warning('库存不足');
-      return;
-    }
+  const updateQuantity = (productId: number, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(productId);
       return;
@@ -147,7 +113,7 @@ const OrderCreatePage: React.FC = () => {
   };
 
   // 从购物车移除
-  const removeFromCart = (productId: string) => {
+  const removeFromCart = (productId: number) => {
     setCart(cart.filter((item) => item.id !== productId));
   };
 
@@ -178,28 +144,71 @@ const OrderCreatePage: React.FC = () => {
   };
 
   // 确认支付
-  const handlePayment = () => {
+  const handlePayment = async () => {
     if (paymentMethod === 'cash' && receivedAmount < totalAmount) {
       message.error('收款金额不足');
       return;
     }
-    message.success('订单创建成功！');
-    setPaymentModalVisible(false);
-    setCart([]);
-    setSelectedCustomer(null);
-    // 打印小票逻辑
-    Modal.success({
-      title: '支付成功',
-      content: (
-        <div>
-          <p>订单号: ORD{Date.now()}</p>
-          <p>实收: ¥{receivedAmount}</p>
-          {paymentMethod === 'cash' && receivedAmount > totalAmount && (
-            <p>找零: ¥{(receivedAmount - totalAmount).toFixed(2)}</p>
-          )}
-        </div>
-      ),
-    });
+
+    if (paymentMethod === 'credit' && !selectedCustomer) {
+      message.error('请先选择客户');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const orderData = {
+        customerId: selectedCustomer?.id,
+        customerName: selectedCustomer?.name || '散客',
+        items: cart.map(item => ({
+          productId: item.id,
+          productName: item.name,
+          unit: item.unit,
+          quantity: item.quantity,
+          unitPrice: item.price,
+          amount: item.subtotal,
+        })),
+        totalQuantity,
+        totalAmount,
+        actualAmount: totalAmount,
+        paymentMethod,
+        remark: '',
+      };
+
+      const order = await orderApi.create(orderData);
+      
+      // 如果不是挂账，直接支付
+      if (paymentMethod !== 'credit') {
+        await orderApi.pay(order.id, {
+          paymentMethod,
+          amount: totalAmount,
+          receivedAmount: paymentMethod === 'cash' ? receivedAmount : totalAmount,
+        });
+      }
+
+      message.success('订单创建成功！');
+      setPaymentModalVisible(false);
+      setCart([]);
+      setSelectedCustomer(null);
+      
+      // 显示成功信息
+      Modal.success({
+        title: '支付成功',
+        content: (
+          <div>
+            <p>订单号: {order.orderNo}</p>
+            <p>实收: ¥{receivedAmount}</p>
+            {paymentMethod === 'cash' && receivedAmount > totalAmount && (
+              <p>找零: ¥{(receivedAmount - totalAmount).toFixed(2)}</p>
+            )}
+          </div>
+        ),
+      });
+    } catch (error) {
+      message.error('创建订单失败');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // 购物车列表列
@@ -209,7 +218,9 @@ const OrderCreatePage: React.FC = () => {
       key: 'product',
       render: (_: any, record: CartItem) => (
         <Space>
-          <span style={{ fontSize: 24 }}>{record.image}</span>
+          <Avatar shape="square" size="small" src={record.imageUrl}>
+            {record.name?.charAt(0)}
+          </Avatar>
           <div>
             <Text strong>{record.name}</Text>
             <br />
@@ -232,7 +243,6 @@ const OrderCreatePage: React.FC = () => {
           <InputNumber
             size="small"
             min={1}
-            max={record.stock}
             value={record.quantity}
             style={{ width: 50 }}
             onChange={(v) => updateQuantity(record.id, v || 1)}
@@ -296,7 +306,7 @@ const OrderCreatePage: React.FC = () => {
                     <Tag
                       key={cat}
                       className={`${styles.categoryTag} ${selectedCategory === cat ? styles.active : ''}`}
-                      onClick={() => setSelectedCategory(cat)}
+                      onClick={() => setSelectedCategory(cat as string)}
                     >
                       {cat}
                     </Tag>
@@ -309,24 +319,27 @@ const OrderCreatePage: React.FC = () => {
                 {filteredProducts.map((product) => (
                   <div
                     key={product.id}
-                    className={`${styles.productItem} ${product.stock === 0 ? styles.outOfStock : ''}`}
-                    onClick={() => addToCart(product)}
+                    className={`${styles.productItem} ${!product.isActive ? styles.outOfStock : ''}`}
+                    onClick={() => product.isActive && addToCart(product)}
                   >
-                    <div className={styles.productImage}>{product.image}</div>
+                    <div className={styles.productImage}>
+                      {product.imageUrl ? (
+                        <img src={product.imageUrl} alt={product.name} />
+                      ) : (
+                        product.name?.charAt(0)
+                      )}
+                    </div>
                     <div className={styles.productInfo}>
                       <Text strong className={styles.productName}>{product.name}</Text>
                       <div className={styles.productMeta}>
                         <Text strong style={{ color: '#D4380D', fontSize: 16 }}>¥{product.price}</Text>
-                        <Text type="secondary" style={{ fontSize: 12 }}>库存: {product.stock}</Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>{product.unit}</Text>
                       </div>
                     </div>
-                    {product.stock === 0 && (
+                    {!product.isActive && (
                       <div className={styles.stockoutMask}>
-                        <Tag color="error">已售罄</Tag>
+                        <Tag color="error">已下架</Tag>
                       </div>
-                    )}
-                    {product.stock > 0 && product.stock <= 20 && (
-                      <Badge.Ribbon text="库存紧张" color="orange" />
                     )}
                   </div>
                 ))}
@@ -364,8 +377,8 @@ const OrderCreatePage: React.FC = () => {
                         <Text strong>{selectedCustomer.name}</Text>
                         <br />
                         <Space size={4}>
-                          <Tag color={selectedCustomer.type === 'VIP' ? 'gold' : 'default'}>
-                            {selectedCustomer.type}
+                          <Tag color={selectedCustomer.level === 'vip' ? 'gold' : selectedCustomer.level === 'svip' ? 'purple' : 'default'}>
+                            {selectedCustomer.level?.toUpperCase() || '普通'}
                           </Tag>
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             {selectedCustomer.phone}
@@ -473,7 +486,9 @@ const OrderCreatePage: React.FC = () => {
                   <Text type="secondary" style={{ fontSize: 12 }}>{customer.phone}</Text>
                 </div>
               </Space>
-              <Tag color={customer.type === 'VIP' ? 'gold' : 'default'}>{customer.type}</Tag>
+              <Tag color={customer.level === 'vip' ? 'gold' : customer.level === 'svip' ? 'purple' : 'default'}>
+                {customer.level?.toUpperCase() || '普通'}
+              </Tag>
             </div>
           ))}
         </div>
@@ -486,6 +501,7 @@ const OrderCreatePage: React.FC = () => {
         onOk={handlePayment}
         onCancel={() => setPaymentModalVisible(false)}
         okText="确认收款"
+        confirmLoading={loading}
         width={500}
       >
         <div className={styles.paymentModal}>
@@ -549,7 +565,7 @@ const OrderCreatePage: React.FC = () => {
               <div className={styles.creditInfo}>
                 <Text>
                   客户 <Text strong>{selectedCustomer.name}</Text> 当前信用额度：
-                  <Text strong style={{ color: '#52c41a' }}>¥{selectedCustomer.credit.toLocaleString()}</Text>
+                  <Text strong style={{ color: '#52c41a' }}>¥{(selectedCustomer.creditLimit || 0).toLocaleString()}</Text>
                 </Text>
               </div>
             )}
@@ -567,4 +583,3 @@ const OrderCreatePage: React.FC = () => {
 };
 
 export default OrderCreatePage;
-

@@ -2,7 +2,6 @@ import {
   DeleteOutlined,
   DownloadOutlined,
   EyeOutlined,
-  FilterOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
@@ -11,7 +10,6 @@ import {
   Button,
   Card,
   Col,
-  DatePicker,
   Descriptions,
   Divider,
   Form,
@@ -19,7 +17,6 @@ import {
   InputNumber,
   message,
   Modal,
-  Popconfirm,
   Row,
   Select,
   Space,
@@ -29,108 +26,11 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import React, { useRef, useState } from 'react';
+import { financeApi, FinanceRecord } from '@/services/api';
 import styles from './index.less';
 
 const { Text, Title } = Typography;
 const { TextArea } = Input;
-const { RangePicker } = DatePicker;
-
-interface Bill {
-  id: string;
-  billNo: string;
-  type: 'income' | 'expense';
-  category: string;
-  amount: number;
-  relatedOrder?: string;
-  paymentMethod: string;
-  description: string;
-  operator: string;
-  createdAt: string;
-  remark?: string;
-}
-
-const mockBills: Bill[] = [
-  {
-    id: '1',
-    billNo: 'B202312230001',
-    type: 'income',
-    category: '销售收入',
-    amount: 1575,
-    relatedOrder: 'ORD202312230001',
-    paymentMethod: '微信',
-    description: '王府酒家购买土鸡20只、肉鸽15只',
-    operator: '张三',
-    createdAt: '2023-12-23 08:32:00',
-  },
-  {
-    id: '2',
-    billNo: 'B202312230002',
-    type: 'income',
-    category: '销售收入',
-    amount: 2400,
-    relatedOrder: 'ORD202312230002',
-    paymentMethod: '支付宝',
-    description: '福满楼购买三黄鸡30只、麻鸭20只',
-    operator: '张三',
-    createdAt: '2023-12-23 09:18:00',
-  },
-  {
-    id: '3',
-    billNo: 'B202312230003',
-    type: 'expense',
-    category: '采购成本',
-    amount: 7600,
-    relatedOrder: 'PO202312230001',
-    paymentMethod: '银行转账',
-    description: '采购土鸡120只、乌鸡80只',
-    operator: '李四',
-    createdAt: '2023-12-23 10:00:00',
-  },
-  {
-    id: '4',
-    billNo: 'B202312230004',
-    type: 'expense',
-    category: '物流配送',
-    amount: 380,
-    paymentMethod: '现金',
-    description: '今日配送费用',
-    operator: '王五',
-    createdAt: '2023-12-23 11:30:00',
-  },
-  {
-    id: '5',
-    billNo: 'B202312230005',
-    type: 'income',
-    category: '配送费',
-    amount: 150,
-    paymentMethod: '现金',
-    description: '配送服务费收入',
-    operator: '张三',
-    createdAt: '2023-12-23 12:00:00',
-  },
-  {
-    id: '6',
-    billNo: 'B202312220001',
-    type: 'expense',
-    category: '人工成本',
-    amount: 1200,
-    paymentMethod: '银行转账',
-    description: '临时工工资结算',
-    operator: '李四',
-    createdAt: '2023-12-22 18:00:00',
-  },
-  {
-    id: '7',
-    billNo: 'B202312220002',
-    type: 'expense',
-    category: '水电杂费',
-    amount: 580,
-    paymentMethod: '银行转账',
-    description: '12月上旬水电费',
-    operator: '李四',
-    createdAt: '2023-12-22 14:00:00',
-  },
-];
 
 const incomeCategories = ['销售收入', '配送费', '加工费', '其他收入'];
 const expenseCategories = ['采购成本', '人工成本', '物流配送', '水电杂费', '设备维护', '其他支出'];
@@ -140,8 +40,9 @@ const FinanceBillsPage: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [modalVisible, setModalVisible] = useState(false);
   const [detailVisible, setDetailVisible] = useState(false);
-  const [currentBill, setCurrentBill] = useState<Bill | null>(null);
+  const [currentBill, setCurrentBill] = useState<FinanceRecord | null>(null);
   const [billType, setBillType] = useState<'income' | 'expense'>('income');
+  const [stats, setStats] = useState({ income: 0, expense: 0, count: 0 });
   const [form] = Form.useForm();
 
   const handleAdd = (type: 'income' | 'expense') => {
@@ -151,32 +52,38 @@ const FinanceBillsPage: React.FC = () => {
     setModalVisible(true);
   };
 
-  const handleView = (record: Bill) => {
-    setCurrentBill(record);
+  const handleView = async (record: FinanceRecord) => {
+    try {
+      const detail = await financeApi.getById(record.id);
+      setCurrentBill(detail || record);
+    } catch {
+      setCurrentBill(record);
+    }
     setDetailVisible(true);
-  };
-
-  const handleDelete = (id: string) => {
-    message.success('删除成功');
-    actionRef.current?.reload();
   };
 
   const handleSubmit = async () => {
     try {
-      await form.validateFields();
+      const values = await form.validateFields();
+      const data = {
+        ...values,
+        type: billType,
+        recordAt: dayjs().toISOString(),
+      };
+      await financeApi.create(data);
       message.success('账单记录成功');
       setModalVisible(false);
       actionRef.current?.reload();
     } catch (error) {
-      console.error('验证失败:', error);
+      console.error('操作失败:', error);
     }
   };
 
-  const columns: ProColumns<Bill>[] = [
+  const columns: ProColumns<FinanceRecord>[] = [
     {
       title: '账单号',
-      dataIndex: 'billNo',
-      key: 'billNo',
+      dataIndex: 'recordNo',
+      key: 'recordNo',
       render: (text, record) => (
         <Text strong style={{ color: record.type === 'income' ? '#52c41a' : '#ff4d4f' }}>
           {text}
@@ -213,7 +120,7 @@ const FinanceBillsPage: React.FC = () => {
       sorter: true,
       render: (amount, record) => (
         <Text strong style={{ color: record.type === 'income' ? '#52c41a' : '#ff4d4f' }}>
-          {record.type === 'income' ? '+' : '-'}¥{amount?.toLocaleString()}
+          {record.type === 'income' ? '+' : '-'}¥{(amount || 0).toLocaleString()}
         </Text>
       ),
     },
@@ -232,55 +139,26 @@ const FinanceBillsPage: React.FC = () => {
       search: false,
     },
     {
-      title: '关联单据',
-      dataIndex: 'relatedOrder',
-      key: 'relatedOrder',
-      width: 150,
-      search: false,
-      render: (order) => order ? <Text type="secondary">{order}</Text> : '-',
-    },
-    {
-      title: '操作员',
-      dataIndex: 'operator',
-      key: 'operator',
-      width: 80,
-      search: false,
-    },
-    {
       title: '时间',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
+      dataIndex: 'recordAt',
+      key: 'recordAt',
       width: 160,
       valueType: 'dateTime',
       sorter: true,
+      search: false,
     },
     {
       title: '操作',
       key: 'action',
-      width: 120,
+      width: 80,
       search: false,
       render: (_, record) => (
-        <Space>
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(record)}>
-            详情
-          </Button>
-          <Popconfirm title="确定要删除该账单吗？" onConfirm={() => handleDelete(record.id)}>
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              删除
-            </Button>
-          </Popconfirm>
-        </Space>
+        <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(record)}>
+          详情
+        </Button>
       ),
     },
   ];
-
-  // 统计数据
-  const todayBills = mockBills.filter((b) => b.createdAt.startsWith('2023-12-23'));
-  const stats = {
-    income: todayBills.filter((b) => b.type === 'income').reduce((sum, b) => sum + b.amount, 0),
-    expense: todayBills.filter((b) => b.type === 'expense').reduce((sum, b) => sum + b.amount, 0),
-    count: todayBills.length,
-  };
 
   return (
     <PageContainer
@@ -314,7 +192,7 @@ const FinanceBillsPage: React.FC = () => {
       </Row>
 
       <Card bordered={false}>
-        <ProTable<Bill>
+        <ProTable<FinanceRecord>
           headerTitle="账单列表"
           actionRef={actionRef}
           rowKey="id"
@@ -333,15 +211,31 @@ const FinanceBillsPage: React.FC = () => {
             </Button>,
           ]}
           request={async (params) => {
-            let data = [...mockBills];
-            if (params.type) {
-              data = data.filter((b) => b.type === params.type);
+            try {
+              const res = await financeApi.getAll({
+                page: params.current,
+                pageSize: params.pageSize,
+                type: params.type,
+                category: params.category,
+              });
+              // 更新统计
+              const today = dayjs().format('YYYY-MM-DD');
+              const todayBills = (res.list || []).filter((b: FinanceRecord) => 
+                dayjs(b.recordAt).format('YYYY-MM-DD') === today
+              );
+              setStats({
+                income: todayBills.filter((b: FinanceRecord) => b.type === 'income').reduce((sum: number, b: FinanceRecord) => sum + b.amount, 0),
+                expense: todayBills.filter((b: FinanceRecord) => b.type === 'expense').reduce((sum: number, b: FinanceRecord) => sum + b.amount, 0),
+                count: todayBills.length,
+              });
+              return {
+                data: res.list || [],
+                success: true,
+                total: res.total || 0,
+              };
+            } catch (error) {
+              return { data: [], success: false, total: 0 };
             }
-            return {
-              data,
-              success: true,
-              total: data.length,
-            };
           }}
           columns={columns}
           pagination={{
@@ -403,9 +297,6 @@ const FinanceBillsPage: React.FC = () => {
           >
             <TextArea rows={2} placeholder="请输入账单描述" />
           </Form.Item>
-          <Form.Item name="relatedOrder" label="关联单据（可选）">
-            <Input placeholder="输入关联的订单号或采购单号" />
-          </Form.Item>
           <Form.Item name="remark" label="备注">
             <TextArea rows={2} placeholder="请输入备注" />
           </Form.Item>
@@ -425,7 +316,7 @@ const FinanceBillsPage: React.FC = () => {
             <div className={styles.detailHeader}>
               <Text type="secondary">账单金额</Text>
               <Title level={2} style={{ margin: 0, color: currentBill.type === 'income' ? '#52c41a' : '#ff4d4f' }}>
-                {currentBill.type === 'income' ? '+' : '-'}¥{currentBill.amount.toLocaleString()}
+                {currentBill.type === 'income' ? '+' : '-'}¥{(currentBill.amount || 0).toLocaleString()}
               </Title>
               <Tag color={currentBill.type === 'income' ? 'success' : 'error'} style={{ marginTop: 8 }}>
                 {currentBill.type === 'income' ? '收入' : '支出'}
@@ -433,15 +324,11 @@ const FinanceBillsPage: React.FC = () => {
             </div>
             <Divider />
             <Descriptions column={1} size="small">
-              <Descriptions.Item label="账单号">{currentBill.billNo}</Descriptions.Item>
+              <Descriptions.Item label="账单号">{currentBill.recordNo}</Descriptions.Item>
               <Descriptions.Item label="分类">{currentBill.category}</Descriptions.Item>
-              <Descriptions.Item label="支付方式">{currentBill.paymentMethod}</Descriptions.Item>
-              <Descriptions.Item label="描述">{currentBill.description}</Descriptions.Item>
-              {currentBill.relatedOrder && (
-                <Descriptions.Item label="关联单据">{currentBill.relatedOrder}</Descriptions.Item>
-              )}
-              <Descriptions.Item label="操作员">{currentBill.operator}</Descriptions.Item>
-              <Descriptions.Item label="时间">{currentBill.createdAt}</Descriptions.Item>
+              <Descriptions.Item label="支付方式">{currentBill.paymentMethod || '-'}</Descriptions.Item>
+              <Descriptions.Item label="描述">{currentBill.description || '-'}</Descriptions.Item>
+              <Descriptions.Item label="时间">{currentBill.recordAt}</Descriptions.Item>
               {currentBill.remark && (
                 <Descriptions.Item label="备注">{currentBill.remark}</Descriptions.Item>
               )}
@@ -454,4 +341,3 @@ const FinanceBillsPage: React.FC = () => {
 };
 
 export default FinanceBillsPage;
-
