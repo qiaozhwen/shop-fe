@@ -1,0 +1,100 @@
+.overview {
+  :global {
+    .ant-card {
+      border-radius: 8px;
+    }
+  }
+}
+
+.statCard {
+  text-align: center;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.timelineCard {
+  :global {
+    .ant-card-body {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+  }
+}
+
+.timelineItem {
+  .timelineHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}
+
+.categoryItem {
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+  text-align: center;
+
+  .stockValue {
+    font-size: 24px;
+    font-weight: bold;
+    color: #D4380D;
+    margin: 8px 0;
+  }
+}
+
+// 移动端适配
+@media (max-width: 768px) {
+  .statCard {
+    &:hover {
+      transform: none;
+    }
+    
+    :global {
+      .ant-statistic-content {
+        font-size: 20px !important;
+      }
+    }
+  }
+
+  .timelineCard {
+    :global {
+      .ant-card-body {
+        max-height: 300px;
+      }
+    }
+  }
+
+  .timelineItem {
+    .timelineHeader {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  .categoryItem {
+    padding: 12px;
+
+    .stockValue {
+      font-size: 20px;
+    }
+  }
+}
+
+// 超小屏幕
+@media (max-width: 480px) {
+  .categoryItem {
+    padding: 10px;
+
+    .stockValue {
+      font-size: 18px;
+    }
+  }
+}

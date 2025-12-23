@@ -1,0 +1,95 @@
+.statCard {
+  border-radius: 8px;
+  text-align: center;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.customerInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.customerMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.customerDetail {
+  padding: 16px 0;
+}
+
+.detailHeader {
+  text-align: center;
+  padding: 16px 0;
+}
+
+.contactInfo {
+  p {
+    margin-bottom: 8px;
+    color: #666;
+  }
+}
+
+.creditInfo {
+  text-align: center;
+}
+
+.miniCard {
+  background: #fafafa;
+  border-radius: 8px;
+  text-align: center;
+}
+
+// 移动端适配
+@media (max-width: 768px) {
+  .statCard {
+    &:hover {
+      transform: none;
+    }
+    
+    :global {
+      .ant-statistic-content {
+        font-size: 20px !important;
+      }
+    }
+  }
+
+  .customerInfo {
+    gap: 8px;
+  }
+
+  .customerMeta {
+    gap: 2px;
+    
+    :global {
+      .ant-typography {
+        font-size: 13px !important;
+      }
+    }
+  }
+
+  .customerDetail {
+    padding: 12px 0;
+  }
+
+  .detailHeader {
+    padding: 12px 0;
+  }
+
+  .miniCard {
+    :global {
+      .ant-card-body {
+        padding: 12px !important;
+      }
+    }
+  }
+}

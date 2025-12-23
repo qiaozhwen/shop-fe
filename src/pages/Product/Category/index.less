@@ -1,0 +1,100 @@
+.categoryCard {
+  border-radius: 12px;
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+}
+
+.categoryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.categoryIcon {
+  font-size: 36px;
+}
+
+.categoryStats {
+  display: flex;
+  justify-content: space-between;
+  margin: 12px 0;
+  gap: 8px;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.salesRatio {
+  margin-top: 8px;
+}
+
+// 移动端适配
+@media (max-width: 768px) {
+  .categoryCard {
+    margin-bottom: 12px;
+    
+    &:hover {
+      transform: none;
+    }
+    
+    :global {
+      .ant-card-body {
+        padding: 16px !important;
+      }
+    }
+  }
+
+  .categoryHeader {
+    margin-bottom: 8px;
+  }
+
+  .categoryIcon {
+    font-size: 28px;
+  }
+
+  .categoryStats {
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 8px 0;
+  }
+
+  .statItem {
+    flex: 1 1 45%;
+    min-width: 80px;
+    
+    :global {
+      .ant-typography {
+        font-size: 12px !important;
+      }
+      
+      .ant-typography strong {
+        font-size: 14px !important;
+      }
+    }
+  }
+}
+
+// 超小屏幕
+@media (max-width: 480px) {
+  .categoryIcon {
+    font-size: 24px;
+  }
+
+  .statItem {
+    flex: 1 1 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}

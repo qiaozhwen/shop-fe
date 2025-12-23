@@ -1,0 +1,348 @@
+.dashboard {
+  padding: 0;
+
+  :global {
+    .ant-card {
+      border-radius: 8px;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+    }
+  }
+}
+
+.statCard {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.statCardInner {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.statIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.statContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.statValue {
+  margin: 4px 0;
+}
+
+.statTrend {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.trendUp {
+  color: #52c41a;
+  font-weight: 500;
+}
+
+.trendDown {
+  color: #ff4d4f;
+  font-weight: 500;
+}
+
+.miniChart {
+  margin-top: 12px;
+}
+
+.chartCard {
+  min-height: 380px;
+
+  :global {
+    .ant-card-body {
+      padding: 20px 24px;
+    }
+  }
+}
+
+.alertList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.alertItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #fff7e6 0%, #fff 100%);
+  border-radius: 8px;
+  border-left: 3px solid #faad14;
+  gap: 12px;
+
+  &:nth-child(-n+2) {
+    background: linear-gradient(135deg, #fff1f0 0%, #fff 100%);
+    border-left-color: #ff4d4f;
+  }
+}
+
+.alertInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.rankList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rankItem {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #fafafa;
+  }
+}
+
+.rankNumber {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  background: #f5f5f5;
+  color: #8c8c8c;
+  flex-shrink: 0;
+
+  &[data-rank="1"] {
+    background: linear-gradient(135deg, #ffd700 0%, #ffb800 100%);
+    color: #fff;
+  }
+
+  &[data-rank="2"] {
+    background: linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%);
+    color: #fff;
+  }
+
+  &[data-rank="3"] {
+    background: linear-gradient(135deg, #cd7f32 0%, #b87333 100%);
+    color: #fff;
+  }
+}
+
+.rankInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  
+  :global {
+    .ant-typography {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}
+
+.rankAmount {
+  font-weight: bold;
+  font-size: 16px;
+  color: #D4380D;
+  white-space: nowrap;
+}
+
+// 平板适配 (768px - 992px)
+@media (max-width: 992px) {
+  .chartCard {
+    min-height: 320px;
+    
+    :global {
+      .ant-card-body {
+        padding: 16px;
+      }
+    }
+  }
+}
+
+// 移动端适配 (< 768px)
+@media (max-width: 768px) {
+  .dashboard {
+    :global {
+      .ant-row {
+        margin-left: -6px !important;
+        margin-right: -6px !important;
+      }
+      
+      .ant-col {
+        padding-left: 6px !important;
+        padding-right: 6px !important;
+      }
+    }
+  }
+
+  .statCard {
+    &:hover {
+      transform: none;
+    }
+    
+    :global {
+      .ant-card-body {
+        padding: 16px !important;
+      }
+    }
+  }
+
+  .statCardInner {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .statIcon {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+    border-radius: 10px;
+  }
+
+  .statContent {
+    :global {
+      .ant-statistic-content {
+        font-size: 22px !important;
+      }
+    }
+  }
+
+  .statTrend {
+    font-size: 11px;
+  }
+
+  .chartCard {
+    min-height: auto;
+
+    :global {
+      .ant-card-body {
+        padding: 12px !important;
+      }
+      
+      .ant-card-head-title {
+        font-size: 14px !important;
+      }
+    }
+  }
+
+  .alertList {
+    gap: 12px;
+  }
+
+  .alertItem {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px;
+    gap: 8px;
+
+    :global {
+      .ant-progress {
+        width: 100% !important;
+      }
+    }
+  }
+
+  .alertInfo {
+    width: 100%;
+  }
+
+  .rankList {
+    gap: 8px;
+  }
+
+  .rankItem {
+    padding: 10px;
+    gap: 12px;
+  }
+
+  .rankNumber {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+
+  .rankInfo {
+    :global {
+      .ant-typography {
+        font-size: 13px !important;
+      }
+    }
+  }
+
+  .rankAmount {
+    font-size: 14px;
+  }
+
+  // 表格在移动端的处理
+  :global {
+    .ant-table-wrapper {
+      .ant-table-thead > tr > th,
+      .ant-table-tbody > tr > td {
+        padding: 10px 8px !important;
+        font-size: 12px !important;
+      }
+    }
+  }
+}
+
+// 超小屏幕 (< 480px)
+@media (max-width: 480px) {
+  .statIcon {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    border-radius: 8px;
+  }
+
+  .statContent {
+    :global {
+      .ant-statistic-content {
+        font-size: 20px !important;
+      }
+      
+      .ant-statistic-content-suffix {
+        font-size: 12px !important;
+      }
+    }
+  }
+
+  .rankItem {
+    padding: 8px;
+    gap: 10px;
+  }
+}

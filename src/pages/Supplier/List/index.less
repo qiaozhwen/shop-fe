@@ -1,0 +1,82 @@
+.statCard {
+  border-radius: 8px;
+  text-align: center;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.supplierInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.supplierMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.supplierDetail {
+  padding: 16px 0;
+}
+
+.detailHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.headerInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+// 移动端适配
+@media (max-width: 768px) {
+  .statCard {
+    &:hover {
+      transform: none;
+    }
+    
+    :global {
+      .ant-statistic-content {
+        font-size: 20px !important;
+      }
+    }
+  }
+
+  .supplierInfo {
+    gap: 8px;
+  }
+
+  .supplierMeta {
+    :global {
+      .ant-typography {
+        font-size: 13px !important;
+      }
+    }
+  }
+
+  .supplierDetail {
+    padding: 12px 0;
+  }
+
+  .detailHeader {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .headerInfo {
+    align-items: center;
+  }
+}

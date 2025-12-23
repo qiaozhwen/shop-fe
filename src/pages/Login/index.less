@@ -1,22 +1,398 @@
-.container {
-  height: 100vh;
+.loginPage {
   display: flex;
-  justify-content: center;
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.brandSection {
+  flex: 1;
+  background: linear-gradient(135deg, #D4380D 0%, #FA541C 50%, #FA8C16 100%);
+  display: flex;
   align-items: center;
-  background-color: #f0f2f5;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 60px;
+}
+
+.brandContent {
+  position: relative;
+  z-index: 10;
+  max-width: 500px;
+  color: #fff;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+
+.logoIcon {
+  font-size: 48px;
+}
+
+.logoText {
+  font-size: 28px;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+.brandTitle {
+  color: #fff !important;
+  font-size: 42px !important;
+  line-height: 1.3 !important;
+  margin-bottom: 24px !important;
+  font-weight: 700 !important;
+}
+
+.brandDesc {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 16px !important;
+  line-height: 1.8 !important;
+  margin-bottom: 48px !important;
+}
+
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.featureItem {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateX(8px);
+  }
+}
+
+.featureIcon {
+  font-size: 32px;
+}
+
+.featureText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  :global {
+    .ant-typography {
+      color: #fff !important;
+    }
+
+    .ant-typography-secondary {
+      color: rgba(255, 255, 255, 0.7) !important;
+    }
+  }
+}
+
+.decoration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+}
+
+.circle1,
+.circle2,
+.circle3 {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.circle1 {
+  width: 400px;
+  height: 400px;
+  top: -100px;
+  right: -100px;
+}
+
+.circle2 {
+  width: 300px;
+  height: 300px;
+  bottom: -50px;
+  left: -50px;
+}
+
+.circle3 {
+  width: 200px;
+  height: 200px;
+  top: 50%;
+  right: 20%;
+}
+
+.formSection {
+  flex: 0 0 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  padding: 40px;
+}
+
+.formContainer {
+  width: 100%;
+  max-width: 380px;
+}
+
+.formHeader {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.formTitle {
+  margin-bottom: 8px !important;
+  color: #262626 !important;
 }
 
 .loginForm {
-  width: 100%;
-  max-width: 400px;
-  padding: 32px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  margin-top: 32px;
+}
 
-  h2 {
-    text-align: center;
-    margin-bottom: 24px;
-    color: rgba(0, 0, 0, 0.85);
+.input {
+  height: 48px;
+  border-radius: 8px;
+  border-color: #e8e8e8;
+
+  &:hover,
+  &:focus {
+    border-color: #D4380D;
+  }
+
+  :global {
+    .ant-input {
+      font-size: 15px;
+    }
+  }
+}
+
+.inputIcon {
+  color: #bfbfbf;
+  font-size: 16px;
+}
+
+.formOptions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.forgotLink {
+  color: #D4380D;
+  
+  &:hover {
+    color: #CF1322;
+  }
+}
+
+.submitBtn {
+  height: 48px;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #D4380D 0%, #FA541C 100%);
+  border: none;
+  box-shadow: 0 4px 12px rgba(212, 56, 13, 0.35);
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: linear-gradient(135deg, #CF1322 0%, #D4380D 100%);
+    box-shadow: 0 6px 16px rgba(212, 56, 13, 0.45);
+    transform: translateY(-1px);
+  }
+}
+
+.demoAccount {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px dashed #e8e8e8;
+
+  :global {
+    .anticon {
+      color: #52c41a;
+    }
+  }
+}
+
+.footer {
+  text-align: center;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #f0f0f0;
+}
+
+// 移动端 Logo (仅在移动端显示)
+.mobileLogo {
+  display: none;
+  text-align: center;
+  margin-bottom: 24px;
+  
+  .logoIconMobile {
+    font-size: 48px;
+    color: #D4380D;
+    display: block;
+    margin-bottom: 8px;
+  }
+  
+  .logoTextMobile {
+    font-size: 24px;
+    font-weight: bold;
+    color: #D4380D;
+    letter-spacing: 2px;
+  }
+}
+
+// 平板适配
+@media (max-width: 992px) {
+  .brandSection {
+    display: none;
+  }
+
+  .formSection {
+    flex: 1;
+  }
+  
+  .mobileLogo {
+    display: block;
+  }
+}
+
+// 移动端适配
+@media (max-width: 576px) {
+  .loginPage {
+    background: #fff;
+  }
+
+  .formSection {
+    padding: 24px 20px;
+    align-items: flex-start;
+    padding-top: 60px;
+  }
+
+  .formContainer {
+    max-width: 100%;
+  }
+
+  .formHeader {
+    margin-bottom: 32px;
+  }
+
+  .formTitle {
+    font-size: 22px !important;
+  }
+
+  .loginForm {
+    margin-top: 24px;
+  }
+
+  .input {
+    height: 44px;
+
+    :global {
+      .ant-input {
+        font-size: 14px;
+      }
+    }
+  }
+
+  .formOptions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .submitBtn {
+    height: 44px;
+    font-size: 15px;
+  }
+
+  .demoAccount {
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    
+    :global {
+      .ant-typography {
+        font-size: 12px !important;
+      }
+    }
+  }
+  
+  .mobileLogo {
+    margin-bottom: 32px;
+    
+    .logoIconMobile {
+      font-size: 56px;
+    }
+    
+    .logoTextMobile {
+      font-size: 28px;
+    }
+  }
+}
+
+// 超小屏幕
+@media (max-width: 375px) {
+  .formSection {
+    padding: 20px 16px;
+    padding-top: 48px;
+  }
+
+  .input {
+    height: 42px;
+  }
+
+  .submitBtn {
+    height: 42px;
+  }
+}
+
+// 横屏适配
+@media (max-height: 600px) and (orientation: landscape) {
+  .formSection {
+    padding: 20px;
+    align-items: flex-start;
+    overflow-y: auto;
+  }
+
+  .formHeader {
+    margin-bottom: 16px;
+  }
+
+  .loginForm {
+    margin-top: 16px;
+  }
+
+  .demoAccount {
+    margin-top: 16px;
+  }
+
+  .footer {
+    margin-top: 16px;
+    padding-top: 12px;
   }
 }

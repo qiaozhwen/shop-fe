@@ -1,0 +1,125 @@
+.statCard {
+  border-radius: 8px;
+  text-align: center;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  &.critical {
+    border-left: 4px solid #ff4d4f;
+  }
+
+  &.warning {
+    border-left: 4px solid #faad14;
+  }
+}
+
+.stockStatus {
+  .stockNumbers {
+    margin-bottom: 4px;
+  }
+}
+
+.urgentCard {
+  background: linear-gradient(135deg, #fff1f0 0%, #fff 100%);
+  border-left: 4px solid #ff4d4f;
+}
+
+.urgentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.urgentItem {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #ffccc7;
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(255, 77, 79, 0.15);
+  }
+}
+
+.urgentItemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.urgentItemBody {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.urgentItemFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px dashed #f0f0f0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+// 移动端适配
+@media (max-width: 768px) {
+  .statCard {
+    &:hover {
+      transform: none;
+    }
+    
+    :global {
+      .ant-statistic-content {
+        font-size: 20px !important;
+      }
+    }
+  }
+
+  .urgentCard {
+    :global {
+      .ant-card-body {
+        padding: 12px !important;
+      }
+    }
+  }
+
+  .urgentItem {
+    padding: 12px;
+  }
+
+  .urgentItemHeader,
+  .urgentItemBody,
+  .urgentItemFooter {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .urgentItemFooter {
+    :global {
+      .ant-btn {
+        width: 100%;
+      }
+    }
+  }
+}
+
+// 超小屏幕
+@media (max-width: 480px) {
+  .urgentItem {
+    padding: 10px;
+  }
+}

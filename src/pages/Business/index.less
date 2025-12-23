@@ -5,3 +5,26 @@
 .add-form {
   margin-bottom: 16px;
 }
+
+// 移动端适配
+@media (max-width: 768px) {
+  .business-page {
+    padding: 12px;
+  }
+
+  .add-form {
+    margin-bottom: 12px;
+    
+    :global {
+      .ant-form-item {
+        margin-bottom: 12px !important;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .business-page {
+    padding: 8px;
+  }
+}

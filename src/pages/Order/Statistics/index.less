@@ -1,0 +1,130 @@
+.statistics {
+  :global {
+    .ant-card {
+      border-radius: 8px;
+    }
+  }
+}
+
+.statCard {
+  position: relative;
+  overflow: hidden;
+
+  :global {
+    .ant-statistic-content-value {
+      font-size: 28px;
+    }
+  }
+}
+
+.statTrend {
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.miniChart {
+  margin-top: 12px;
+}
+
+.customerProgress {
+  margin-top: 12px;
+}
+
+.rankBadge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 12px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.categoryDetail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.categoryItem {
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 8px;
+}
+
+.categoryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.categoryRank {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #D4380D;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.categoryMeta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+// 移动端适配
+@media (max-width: 768px) {
+  .statCard {
+    :global {
+      .ant-statistic-content-value {
+        font-size: 20px !important;
+      }
+    }
+  }
+
+  .statTrend {
+    font-size: 11px;
+    margin-left: 4px;
+    display: inline-flex;
+  }
+
+  .categoryDetail {
+    gap: 12px;
+  }
+
+  .categoryItem {
+    padding: 10px;
+  }
+
+  .categoryHeader {
+    margin-bottom: 6px;
+  }
+
+  .rankBadge {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+  }
+}
+
+// 超小屏幕
+@media (max-width: 480px) {
+  .categoryMeta {
+    flex-direction: column;
+    gap: 4px;
+  }
+}

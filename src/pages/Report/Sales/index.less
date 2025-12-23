@@ -1,0 +1,51 @@
+.report {
+  :global {
+    .ant-card {
+      border-radius: 8px;
+    }
+  }
+}
+
+.statCard {
+  text-align: center;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.rankBadge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 12px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+// 移动端适配
+@media (max-width: 768px) {
+  .statCard {
+    &:hover {
+      transform: none;
+    }
+    
+    :global {
+      .ant-statistic-content {
+        font-size: 20px !important;
+      }
+    }
+  }
+
+  .rankBadge {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+  }
+}

@@ -1,0 +1,50 @@
+.statCard {
+  border-radius: 8px;
+  text-align: center;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.staffInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.staffMeta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+// 移动端适配
+@media (max-width: 768px) {
+  .statCard {
+    &:hover {
+      transform: none;
+    }
+    
+    :global {
+      .ant-statistic-content {
+        font-size: 20px !important;
+      }
+    }
+  }
+
+  .staffInfo {
+    gap: 8px;
+  }
+
+  .staffMeta {
+    :global {
+      .ant-typography {
+        font-size: 13px !important;
+      }
+    }
+  }
+}
