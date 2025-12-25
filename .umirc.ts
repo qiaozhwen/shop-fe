@@ -36,11 +36,13 @@ export default defineConfig({
         {
           name: '活禽列表',
           path: '/product/list',
+          icon: 'unorderedList',
           component: './Product/List',
         },
         {
           name: '商品分类',
           path: '/product/category',
+          icon: 'tags',
           component: './Product/Category',
         },
       ],
@@ -53,21 +55,25 @@ export default defineConfig({
         {
           name: '库存概览',
           path: '/inventory/overview',
+          icon: 'pieChart',
           component: './Inventory/Overview',
         },
         {
           name: '入库管理',
           path: '/inventory/inbound',
+          icon: 'import',
           component: './Inventory/Inbound',
         },
         {
           name: '出库管理',
           path: '/inventory/outbound',
+          icon: 'export',
           component: './Inventory/Outbound',
         },
         {
           name: '库存预警',
           path: '/inventory/alert',
+          icon: 'bell',
           component: './Inventory/Alert',
         },
       ],
@@ -80,16 +86,19 @@ export default defineConfig({
         {
           name: '销售开单',
           path: '/order/create',
+          icon: 'fileAdd',
           component: './Order/Create',
         },
         {
           name: '订单列表',
           path: '/order/list',
+          icon: 'orderedList',
           component: './Order/List',
         },
         {
           name: '订单统计',
           path: '/order/statistics',
+          icon: 'barChart',
           component: './Order/Statistics',
         },
       ],
@@ -102,11 +111,13 @@ export default defineConfig({
         {
           name: '客户列表',
           path: '/customer/list',
+          icon: 'contacts',
           component: './Customer/List',
         },
         {
           name: '客户分析',
           path: '/customer/analysis',
+          icon: 'fundProjectionScreen',
           component: './Customer/Analysis',
         },
       ],
@@ -119,11 +130,13 @@ export default defineConfig({
         {
           name: '供应商列表',
           path: '/supplier/list',
+          icon: 'solution',
           component: './Supplier/List',
         },
         {
           name: '采购管理',
           path: '/supplier/purchase',
+          icon: 'shoppingCart',
           component: './Supplier/Purchase',
         },
       ],
@@ -136,11 +149,13 @@ export default defineConfig({
         {
           name: '收支统计',
           path: '/finance/summary',
+          icon: 'fundView',
           component: './Finance/Summary',
         },
         {
           name: '账单明细',
           path: '/finance/bills',
+          icon: 'fileText',
           component: './Finance/Bills',
         },
       ],
@@ -153,11 +168,13 @@ export default defineConfig({
         {
           name: '销售报表',
           path: '/report/sales',
+          icon: 'lineChart',
           component: './Report/Sales',
         },
         {
           name: '库存报表',
           path: '/report/inventory',
+          icon: 'stock',
           component: './Report/Inventory',
         },
       ],
@@ -170,11 +187,13 @@ export default defineConfig({
         {
           name: '员工管理',
           path: '/system/staff',
+          icon: 'user',
           component: './System/Staff',
-    },
-    {
+        },
+        {
           name: '系统日志',
           path: '/system/logs',
+          icon: 'fileSearch',
           component: './System/Logs',
         },
       ],
