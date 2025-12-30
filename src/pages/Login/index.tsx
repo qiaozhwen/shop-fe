@@ -1,7 +1,6 @@
 import { login } from '@/services/auth';
 import {
   LockOutlined,
-  SafetyOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import { Button, Checkbox, Form, Input, message, Typography } from 'antd';
@@ -151,13 +150,6 @@ const LoginPage = () => {
             </Button>
           </Form.Item>
         </Form>
-
-          <div className={styles.demoAccount}>
-            <SafetyOutlined />
-            <Text type="secondary">
-              演示账号: qiaozhen / 19960723
-            </Text>
-          </div>
 
           <div className={styles.footer}>
             <Text type="secondary">
