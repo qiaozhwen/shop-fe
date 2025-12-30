@@ -27,6 +27,9 @@ const LoginPage = () => {
       const response: any = await login(values);
       sessionStorage.setItem('token', response.access_token);
       sessionStorage.setItem('username', JSON.stringify(response.user));
+      // 设置 token 过期时间（默认 24 小时）
+      const expiryTime = Date.now() + 24 * 60 * 60 * 1000;
+      sessionStorage.setItem('tokenExpiry', expiryTime.toString());
       message.success('登录成功，欢迎回来！');
       history.push('/');
     } catch (error) {
@@ -42,7 +45,7 @@ const LoginPage = () => {
       <div className={styles.brandSection}>
         <div className={styles.brandContent}>
           <div className={styles.logo}>
-            <span className={styles.logoIcon}>🐔</span>
+            <img src="/logo.svg" alt="logo" className={styles.logoIcon} style={{ width: 48, height: 48 }} />
             <span className={styles.logoText}>禽翼鲜生</span>
           </div>
           <Title level={1} className={styles.brandTitle}>
@@ -88,7 +91,7 @@ const LoginPage = () => {
         <div className={styles.formContainer}>
           {/* 移动端 Logo */}
           <div className={styles.mobileLogo}>
-            <span className={styles.logoIconMobile}>🐔</span>
+            <img src="/logo.svg" alt="logo" className={styles.logoIconMobile} style={{ width: 40, height: 40 }} />
             <span className={styles.logoTextMobile}>禽翼鲜生</span>
           </div>
           
@@ -152,13 +155,13 @@ const LoginPage = () => {
           <div className={styles.demoAccount}>
             <SafetyOutlined />
             <Text type="secondary">
-              演示账号: admin / 123456
+              演示账号: qiaozhen / 19960723
             </Text>
           </div>
 
           <div className={styles.footer}>
             <Text type="secondary">
-              © 2023 禽翼鲜生 门店管理系统 v1.0
+              © 2024 禽翼鲜生 门店管理系统 v1.0
             </Text>
           </div>
         </div>

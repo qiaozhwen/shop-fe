@@ -3,6 +3,11 @@ import { defineConfig } from '@umijs/max';
 export default defineConfig({
   mfsu: false,
   antd: {},
+  favicon: '/favicon.svg',
+  links: [
+    { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+    { rel: 'apple-touch-icon', href: '/favicon.svg' },
+  ],
   styles: ['@/global.less'],
   access: {},
   model: {},
@@ -202,10 +207,7 @@ export default defineConfig({
   npmClient: 'pnpm',
   proxy: {
     '/api': {
-      target:
-        process.env.NODE_ENV === 'development'
-          ? 'http://106.14.227.122:5000'
-          : 'http://106.14.227.122:5000',
+      target: 'http://localhost:5000',
       changeOrigin: true,
       pathRewrite: { '^/api': '' },
     },

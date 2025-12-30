@@ -3,6 +3,37 @@ import { removeToken } from '@/utils/auth';
 import { message } from 'antd';
 import { history } from 'umi';
 
+// 检查 token 是否有效
+const checkTokenValid = (): boolean => {
+  const token = sessionStorage.getItem('token');
+  if (!token) return false;
+  
+  // 检查 token 是否过期（如果存储了过期时间）
+  const tokenExpiry = sessionStorage.getItem('tokenExpiry');
+  if (tokenExpiry) {
+    const expiryTime = parseInt(tokenExpiry, 10);
+    if (Date.now() > expiryTime) {
+      // Token 已过期，清除存储
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('username');
+      sessionStorage.removeItem('tokenExpiry');
+      return false;
+    }
+  }
+  return true;
+};
+
+// 跳转到登录页面并提示
+const redirectToLogin = (msg?: string) => {
+  const { pathname } = history.location;
+  if (pathname !== '/login') {
+    if (msg) {
+      message.warning(msg);
+    }
+    history.push('/login');
+  }
+};
+
 // 全局初始化数据配置，用于 Layout 用户信息和权限初始化
 // 更多信息见文档：https://umijs.org/docs/api/runtime-config#getinitialstate
 export async function getInitialState(): Promise<{ name: string; avatar?: string }> {
@@ -81,10 +112,9 @@ export const layout = () => {
     menuHeaderRender: undefined,
     onPageChange: () => {
       const { pathname } = history.location;
-      // 如果没有登录，重定向到 login
-      const token = sessionStorage.getItem('token');
-      if (!token && pathname !== '/login') {
-        history.push('/login');
+      // 如果没有登录或 token 失效，重定向到 login
+      if (pathname !== '/login' && !checkTokenValid()) {
+        redirectToLogin('请先登录后再访问');
       }
     },
   };
@@ -114,7 +144,10 @@ export const request = {
         const { data } = response as any;
         if (data?.code === 401) {
           removeToken();
-          history.push('/login');
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('username');
+          sessionStorage.removeItem('tokenExpiry');
+          redirectToLogin('登录已失效，请重新登录');
         }
         return response;
       },
@@ -122,9 +155,13 @@ export const request = {
         // Intercept failed responses to handle HTTP errors.
         if (error.response?.status === 401) {
           removeToken();
-          history.push('/login');
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('username');
+          sessionStorage.removeItem('tokenExpiry');
+          redirectToLogin('登录已失效，请重新登录');
+        } else {
+          message.error(error.response?.data?.message || '请求失败');
         }
-        message.error(error.response?.data?.message || '请求失败');
         return Promise.reject(error);
       },
     ],
