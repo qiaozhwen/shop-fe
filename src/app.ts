@@ -1,8 +1,6 @@
 // 运行时配置
 import { removeToken } from '@/utils/auth';
-import { LogoutOutlined, UserOutlined } from '@ant-design/icons';
-import { Dropdown, message } from 'antd';
-import type { MenuProps } from 'antd';
+import { message } from 'antd';
 import { history } from 'umi';
 
 // 获取用户信息
@@ -36,7 +34,7 @@ const handleLogout = () => {
 const checkTokenValid = (): boolean => {
   const token = sessionStorage.getItem('token');
   if (!token) return false;
-  
+
   // 检查 token 是否过期（如果存储了过期时间）
   const tokenExpiry = sessionStorage.getItem('tokenExpiry');
   if (tokenExpiry) {
@@ -65,7 +63,10 @@ const redirectToLogin = (msg?: string) => {
 
 // 全局初始化数据配置，用于 Layout 用户信息和权限初始化
 // 更多信息见文档：https://umijs.org/docs/api/runtime-config#getinitialstate
-export async function getInitialState(): Promise<{ name: string; avatar?: string }> {
+export async function getInitialState(): Promise<{
+  name: string;
+  avatar?: string;
+}> {
   const username = sessionStorage.getItem('username');
   let name = '禽翼鲜生';
   if (username) {
@@ -82,7 +83,7 @@ export async function getInitialState(): Promise<{ name: string; avatar?: string
 export const layout = () => {
   // 检测是否为移动端
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-  
+
   return {
     logo: '/logo.svg',
     title: '禽翼鲜生',
@@ -132,41 +133,6 @@ export const layout = () => {
       src: undefined,
       title: getUserInfo().name,
       size: isMobile ? 'small' : 'default',
-      render: (_: any, dom: any) => {
-        const userInfo = getUserInfo();
-        const menuItems: MenuProps['items'] = [
-          {
-            key: 'userinfo',
-            icon: <UserOutlined />,
-            label: (
-              <span>
-                <div style={{ fontWeight: 500 }}>{userInfo.name}</div>
-                {userInfo.username && (
-                  <div style={{ fontSize: 12, color: '#999' }}>@{userInfo.username}</div>
-                )}
-              </span>
-            ),
-            disabled: true,
-          },
-          {
-            type: 'divider',
-          },
-          {
-            key: 'logout',
-            icon: <LogoutOutlined />,
-            label: '退出登录',
-            onClick: handleLogout,
-          },
-        ];
-        return (
-          <Dropdown menu={{ items: menuItems }} placement="bottomRight">
-            <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-              {dom}
-              <span style={{ color: '#595959' }}>{userInfo.name}</span>
-            </span>
-          </Dropdown>
-        );
-      },
     },
     actionsRender: () => [],
     footerRender: false,
