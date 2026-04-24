@@ -195,7 +195,7 @@ Commit 前缀：`[SHOP-FE-XXX]` 示例：`[SHOP-FE-105] feat(store): add store l
 
 ### Day 0 - 脚手架
 
-- [ ] [SHOP-FE-001] 创建 `qz-shop-admin` 项目
+- [x] [SHOP-FE-001] 创建 `qz-shop-admin` 项目
   - 命令: `pnpm create vite qz-shop-admin --template react-ts`
   - 验收: `pnpm dev` 能打开 http://localhost:5173
 - [ ] [SHOP-FE-002] admin 接入 Ant Design 5 + dayjs
