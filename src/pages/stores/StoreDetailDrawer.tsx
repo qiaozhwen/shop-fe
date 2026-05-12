@@ -1,6 +1,13 @@
-import { Drawer, Descriptions, Tabs, Tag, Empty } from 'antd';
 import type { Store } from '@/types/store';
-import { STORE_STATUS_LABEL, STORE_STATUS_COLOR } from '@/types/store';
+import { STORE_STATUS_LABEL } from '@/types/store';
+import { Pill } from '@/components/ui/pill';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface Props {
   open: boolean;
@@ -8,66 +15,77 @@ interface Props {
   onClose: () => void;
 }
 
+type StatusTone = 'up' | 'down' | 'warn';
+const STATUS_TONE: Record<string, StatusTone> = {
+  OPEN: 'up',
+  CLOSED: 'down',
+  RENOVATING: 'warn',
+};
+
+function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-3 py-2.5 border-b border-border last:border-0">
+      <span className="w-24 flex-shrink-0 text-[12px] text-text-3">{label}</span>
+      <span className="text-[13px] text-text">{value}</span>
+    </div>
+  );
+}
+
 export default function StoreDetailDrawer({ open, store, onClose }: Props) {
   return (
-    <Drawer
-      open={open}
-      onClose={onClose}
-      width={560}
-      title={store ? `门店详情 - ${store.name}` : '门店详情'}
-      destroyOnClose
-    >
-      {store && (
-        <Tabs
-          items={[
-            {
-              key: 'info',
-              label: '基本信息',
-              children: (
-                <Descriptions column={1} bordered size="small">
-                  <Descriptions.Item label="编码">
-                    {store.code}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="名称">
-                    {store.name}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="地址">
-                    {store.address}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="电话">
-                    {store.phone}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="店长">
-                    {store.ownerName}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="营业时间">{`${store.openTime ?? '-'} ~ ${store.closeTime ?? '-'}`}</Descriptions.Item>
-                  <Descriptions.Item label="状态">
-                    <Tag color={STORE_STATUS_COLOR[store.status]}>
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent className="w-[560px] max-w-[90vw] overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>{store ? `门店详情 — ${store.name}` : '门店详情'}</SheetTitle>
+        </SheetHeader>
+
+        {store && (
+          <Tabs defaultValue="info">
+            <TabsList>
+              <TabsTrigger value="info">概览</TabsTrigger>
+              <TabsTrigger value="staff">员工</TabsTrigger>
+              <TabsTrigger value="inventory">库存</TabsTrigger>
+              <TabsTrigger value="orders">订单</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="info">
+              <div className="rounded-[8px] border border-border bg-surface px-4">
+                <InfoRow label="编码" value={<span className="font-mono">{store.code}</span>} />
+                <InfoRow label="门店名称" value={store.name} />
+                <InfoRow label="地址" value={store.address} />
+                <InfoRow label="电话" value={<span className="font-mono">{store.phone}</span>} />
+                <InfoRow label="店长" value={store.ownerName} />
+                <InfoRow
+                  label="营业时间"
+                  value={`${store.openTime ?? '-'} ~ ${store.closeTime ?? '-'}`}
+                />
+                <InfoRow
+                  label="状态"
+                  value={
+                    <Pill tone={STATUS_TONE[store.status] ?? 'mute'}>
                       {STORE_STATUS_LABEL[store.status]}
-                    </Tag>
-                  </Descriptions.Item>
-                  <Descriptions.Item label="备注">
-                    {store.remark || '-'}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="创建时间">
-                    {store.createdAt || '-'}
-                  </Descriptions.Item>
-                </Descriptions>
-              ),
-            },
-            {
-              key: 'staff',
-              label: '员工',
-              children: <Empty description="待 Sprint 后续接入" />,
-            },
-            {
-              key: 'products',
-              label: '商品',
-              children: <Empty description="待 Sprint 后续接入" />,
-            },
-          ]}
-        />
-      )}
-    </Drawer>
+                    </Pill>
+                  }
+                />
+                <InfoRow label="备注" value={store.remark || '-'} />
+                <InfoRow label="创建时间" value={<span className="text-text-3">{store.createdAt || '-'}</span>} />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="staff">
+              <div className="py-12 text-center text-[13px] text-text-3">待 Sprint 后续接入</div>
+            </TabsContent>
+
+            <TabsContent value="inventory">
+              <div className="py-12 text-center text-[13px] text-text-3">待 Sprint 后续接入</div>
+            </TabsContent>
+
+            <TabsContent value="orders">
+              <div className="py-12 text-center text-[13px] text-text-3">待 Sprint 后续接入</div>
+            </TabsContent>
+          </Tabs>
+        )}
+      </SheetContent>
+    </Sheet>
   );
 }
