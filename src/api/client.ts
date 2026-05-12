@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { message } from 'antd';
+import { toast } from 'sonner';
 import { mockAdapter } from './mock';
 
 const useMock = (import.meta.env.VITE_USE_MOCK ?? 'true') !== 'false';
@@ -28,18 +28,18 @@ client.interceptors.response.use(
     // 解包 Result<T> 结构
     const res = response.data;
     if (res.code !== undefined && res.code !== 200) {
-      message.error(res.message || '请求失败');
+      toast.error(res.message || '请求失败');
       return Promise.reject(new Error(res.message || '请求失败'));
     }
     return res;
   },
   (error) => {
     if (error.response?.status === 401) {
-      message.error('登录已过期，请重新登录');
+      toast.error('登录已过期，请重新登录');
       localStorage.removeItem('token');
       window.location.href = '/login';
     } else {
-      message.error(error.response?.data?.message || error.message || '网络错误');
+      toast.error(error.response?.data?.message || error.message || '网络错误');
     }
     return Promise.reject(error);
   }
