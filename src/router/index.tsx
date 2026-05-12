@@ -1,8 +1,13 @@
 import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { Spin } from 'antd';
 import MainLayout from '@/layouts/MainLayout';
 import AuthGuard from './AuthGuard';
+
+const PageLoader = () => (
+  <div className="flex items-center justify-center h-64">
+    <div className="w-6 h-6 rounded-full border-2 border-border border-t-primary animate-spin" />
+  </div>
+);
 
 const LoginPage = lazy(() => import('@/pages/login/LoginPage'));
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
@@ -22,7 +27,7 @@ const PricingPage = lazy(() => import('@/pages/pricing/PricingPage'));
 const ReportPage = lazy(() => import('@/pages/report/ReportPage'));
 
 const Loading = () => (
-  <div style={{ padding: 80, textAlign: 'center' }}><Spin size="large" /></div>
+  <div style={{ padding: 80, textAlign: 'center' }}><PageLoader /></div>
 );
 
 export default function AppRouter() {
