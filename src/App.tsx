@@ -1,8 +1,21 @@
+import AppRouter from './router';
+import { ConfigProvider, App as AntdApp } from 'antd';
+import zhCN from 'antd/locale/zh_CN';
+
 export default function App() {
   return (
-    <div style={{ padding: 24 }}>
-      <h1>QZ Shop Admin</h1>
-      <p>Sprint 0 · Day 0 · [SHOP-FE-001] Vite + React 18 + TypeScript 5 scaffold ready.</p>
-    </div>
+    <ConfigProvider
+      locale={zhCN}
+      theme={{
+        token: {
+          colorPrimary: '#d4380d',
+          borderRadius: 6,
+        },
+      }}
+    >
+      <AntdApp>
+        <AppRouter />
+      </AntdApp>
+    </ConfigProvider>
   );
 }
