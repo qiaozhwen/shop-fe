@@ -12,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { modules } from '@/config/nav';
+import { useAuthStore } from '@/store/useAuthStore';
+import { authApi } from '@/api/modules/authApi';
 
 function useBreadcrumb() {
   const { pathname } = useLocation();
@@ -27,8 +29,10 @@ export function Topbar() {
   // TODO: wire useAppStore.currentStoreId — store only exposes currentStoreId (number), no name
   const storeName = '总店';
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
+  const handleLogout = async () => {
+    const refreshToken = useAuthStore.getState().refreshToken ?? undefined;
+    try { await authApi.logout(refreshToken); } catch { /* 忽略后端失败，本地清空就够 */ }
+    useAuthStore.getState().clear();
     toast.success('已退出登录');
     navigate('/login', { replace: true });
   };
