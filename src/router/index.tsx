@@ -46,6 +46,7 @@ export default function AppRouter() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="pos" element={<PosPage />} />
+          <Route path="sales" element={<Navigate to="/sales/orders" replace />} />
           <Route path="sales/orders" element={<SalesOrderListPage />} />
           <Route path="sales/orders/:id" element={<SalesOrderDetailPage />} />
           <Route path="sales/processing" element={<ProcessingBoardPage />} />
