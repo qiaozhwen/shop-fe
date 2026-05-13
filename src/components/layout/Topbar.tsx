@@ -1,7 +1,16 @@
-import { Bell, Search } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { Bell, LogOut, Search, User as UserIcon } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { modules } from '@/config/nav';
 
 function useBreadcrumb() {
@@ -14,8 +23,16 @@ function useBreadcrumb() {
 
 export function Topbar() {
   const bc = useBreadcrumb();
+  const navigate = useNavigate();
   // TODO: wire useAppStore.currentStoreId — store only exposes currentStoreId (number), no name
   const storeName = '总店';
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    toast.success('已退出登录');
+    navigate('/login', { replace: true });
+  };
+
   return (
     <header className="h-14 shrink-0 border-b border-border bg-surface flex items-center px-6 gap-4">
       <div className="text-[13px] text-text-2">
@@ -47,9 +64,39 @@ export function Topbar() {
         <Bell size={16} />
         <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-danger" />
       </button>
-      <Avatar>
-        <AvatarFallback>QZ</AvatarFallback>
-      </Avatar>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="rounded-full outline-none focus:ring-2 focus:ring-primary/40"
+            aria-label="账户菜单"
+          >
+            <Avatar>
+              <AvatarFallback>QZ</AvatarFallback>
+            </Avatar>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" sideOffset={8} className="w-44">
+          <DropdownMenuLabel>
+            <div className="flex flex-col">
+              <span className="text-[13px] font-medium text-text">乔振</span>
+              <span className="text-[11px] text-text-3 mt-0.5">店长</span>
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => toast.info('个人资料 — 待开发')}>
+            <UserIcon size={14} className="mr-2" />
+            个人资料
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onSelect={handleLogout}
+            className="text-danger focus:text-danger focus:bg-danger/10"
+          >
+            <LogOut size={14} className="mr-2" />
+            退出登录
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </header>
   );
 }
