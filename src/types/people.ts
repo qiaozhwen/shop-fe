@@ -47,6 +47,7 @@ export interface Staff {
 }
 
 // 用户/鉴权
+/** @deprecated 请使用 `@/types/auth` 中的 `Subject`（新的 staff 鉴权契约）。 */
 export interface UserInfo {
   id: ID;
   username: string;
@@ -57,11 +58,13 @@ export interface UserInfo {
   avatar?: string;
 }
 
+/** @deprecated 旧的用户名+密码登录 DTO，新接口用 `@/types/auth#PasswordLoginDTO`。 */
 export interface LoginDTO {
   username: string;
   password: string;
 }
 
+/** @deprecated 旧的登录响应，新接口用 `@/types/auth#LoginResponse`。 */
 export interface LoginResult {
   token: string;
   user: UserInfo;

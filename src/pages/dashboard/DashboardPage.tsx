@@ -59,7 +59,7 @@ export default function DashboardPage() {
   const { data, isLoading } = useDashboard();
   const navigate = useNavigate();
   // keep hooks — data used for contextual info display
-  const _user = useAuthStore((s) => s.user);
+  const _user = useAuthStore((s) => s.subject);
   const currentStoreId = useAppStore((s) => s.currentStoreId);
   const { data: storesData } = useStores({ pageSize: 999 });
   const currentStore = storesData?.list.find((s) => s.id === currentStoreId);

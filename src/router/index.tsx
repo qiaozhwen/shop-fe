@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import MainLayout from '@/layouts/MainLayout';
 import AuthGuard from './AuthGuard';
+import PublicOnlyGuard from './PublicOnlyGuard';
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-64">
@@ -10,6 +11,10 @@ const PageLoader = () => (
 );
 
 const LoginPage = lazy(() => import('@/pages/login/LoginPage'));
+const BindPhonePage = lazy(() => import('@/pages/auth/BindPhonePage'));
+const SsoCallbackPage = lazy(() => import('@/pages/auth/SsoCallbackPage'));
+const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage'));
+const SecurityPage = lazy(() => import('@/pages/account/SecurityPage'));
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
 const PosPage = lazy(() => import('@/pages/pos/PosPage'));
 const SalesOrderListPage = lazy(() => import('@/pages/sales/SalesOrderListPage'));
@@ -34,7 +39,24 @@ export default function AppRouter() {
   return (
     <Suspense fallback={<Loading />}>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/login"
+          element={
+            <PublicOnlyGuard>
+              <LoginPage />
+            </PublicOnlyGuard>
+          }
+        />
+        <Route path="/auth/sso/callback" element={<SsoCallbackPage />} />
+        <Route path="/auth/bind-phone" element={<BindPhonePage />} />
+        <Route
+          path="/auth/reset-password"
+          element={
+            <PublicOnlyGuard>
+              <ResetPasswordPage />
+            </PublicOnlyGuard>
+          }
+        />
         <Route
           path="/"
           element={
@@ -60,9 +82,11 @@ export default function AppRouter() {
           <Route path="staff" element={<StaffPage />} />
           <Route path="pricing" element={<PricingPage />} />
           <Route path="report" element={<ReportPage />} />
+          <Route path="account/security" element={<SecurityPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Suspense>
   );
 }
+

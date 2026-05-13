@@ -60,7 +60,10 @@ const paginate = <T>(arr: T[], page = 1, pageSize = 10) => ({
 });
 
 const handlers: MockHandler[] = [
-  // ---- 登录 ----
+  // ============ 新版 staff auth（裸 JSON 返回，不走 ok 包装） ============
+  ...buildAuthHandlers(),
+
+  // ---- 登录（旧 mock 留作向后兼容） ----
   {
     match: /^\/auth\/login$/,
     method: 'post',
@@ -664,6 +667,20 @@ export async function mockAdapter(config: AxiosRequestConfig) {
     const m = url.match(h.match);
     if (m) {
       const data = await h.handle(m, body, params);
+      // 处理 mock 内显式返回的错误状态
+      if (data && typeof data === 'object' && data.__mockError) {
+        const err: any = new Error(data.message || 'Mock error');
+        err.response = {
+          status: data.status,
+          data: { message: data.message, ...(data.payload || {}) },
+          headers: data.headers || {},
+          config,
+          statusText: 'Error',
+        };
+        err.config = config;
+        err.isAxiosError = true;
+        throw err;
+      }
       return {
         data,
         status: 200,
@@ -693,4 +710,222 @@ function safeJSON(s: string) {
   } catch {
     return s;
   }
+}
+
+/* ────────────────────── 新版 staff auth mock ────────────────────── */
+
+interface MockSession {
+  refreshToken: string;
+  accessToken: string;
+  subject: any;
+}
+const sessionsByRefresh = new Map<string, MockSession>();
+const bindTokens = new Map<string, { provider: 'WECHAT' | 'ALIPAY'; profile: any; expiresAt: number }>();
+const ssoStates = new Map<string, { provider: 'WECHAT' | 'ALIPAY' }>();
+
+const STAFF_PHONE = '13800000000';
+const STAFF_PASSWORD = '123456';
+
+const sampleStaff = {
+  type: 'STAFF',
+  id: 1,
+  phone: STAFF_PHONE,
+  nickname: '示例店长',
+  avatarUrl: '',
+  roles: ['MANAGER'],
+  hasPassword: true,
+  boundProviders: ['WECHAT'],
+};
+
+let currentMe: any = { ...sampleStaff };
+
+function makeLoginResponse(subject: any) {
+  const accessToken = 'mock-at-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+  const refreshToken = 'mock-rt-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+  const session: MockSession = { accessToken, refreshToken, subject };
+  sessionsByRefresh.set(refreshToken, session);
+  return {
+    tokenType: 'Bearer',
+    accessToken,
+    accessTokenExpiresIn: 7200,
+    refreshToken,
+    refreshTokenExpiresIn: 60 * 60 * 24 * 7,
+    subject,
+  };
+}
+
+function mockErr(status: number, message: string, extra?: { payload?: any; headers?: any }) {
+  return { __mockError: true, status, message, payload: extra?.payload, headers: extra?.headers };
+}
+
+function buildAuthHandlers(): MockHandler[] {
+  return [
+    // ── 密码登录 ──
+    {
+      match: /^\/api\/admin\/auth\/login$/,
+      method: 'post',
+      handle: (_m, body) => {
+        if (body?.phone === STAFF_PHONE && body?.password === STAFF_PASSWORD) {
+          currentMe = { ...sampleStaff };
+          return makeLoginResponse(currentMe);
+        }
+        return mockErr(401, '手机号或密码错误');
+      },
+    },
+    // ── 短信发送 ──
+    {
+      match: /^\/api\/admin\/auth\/sms\/send$/,
+      method: 'post',
+      handle: (_m, body) => {
+        if (!/^1[3-9]\d{9}$/.test(body?.phone || '')) {
+          return mockErr(400, '手机号格式错误');
+        }
+        return { phone: body.phone, expiresIn: 300, resendAfter: 60 };
+      },
+    },
+    // ── 短信登录 ──
+    {
+      match: /^\/api\/admin\/auth\/sms\/login$/,
+      method: 'post',
+      handle: (_m, body) => {
+        if (body?.code !== '123456') return mockErr(401, '验证码不正确');
+        currentMe = { ...sampleStaff, phone: body.phone || STAFF_PHONE };
+        return makeLoginResponse(currentMe);
+      },
+    },
+    // ── SSO start ──
+    {
+      match: /^\/api\/admin\/auth\/sso\/(wechat|alipay)\/start$/,
+      method: 'post',
+      handle: (m) => {
+        const provider = m[1].toUpperCase() as 'WECHAT' | 'ALIPAY';
+        const state = Math.random().toString(36).slice(2, 12);
+        ssoStates.set(state, { provider });
+        // 用占位 PNG（dataURI 1x1 灰）模拟二维码
+        const qrUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+          `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" fill="#fff"/><text x="80" y="84" text-anchor="middle" font-size="14" fill="#16A34A">${provider} QR · ${state.slice(0,4)}</text></svg>`,
+        );
+        return { qrUrl, state };
+      },
+    },
+    // ── SSO exchange ──
+    {
+      match: /^\/api\/admin\/auth\/sso\/(wechat|alipay)\/exchange$/,
+      method: 'post',
+      handle: (m, body) => {
+        const provider = m[1].toUpperCase() as 'WECHAT' | 'ALIPAY';
+        const state = body?.state as string | undefined;
+        if (!state || !ssoStates.has(state)) return mockErr(400, '状态已过期');
+        ssoStates.delete(state);
+        // state 末尾为 'p' → BIND_PENDING
+        if (state.endsWith('p')) {
+          const bindToken = 'mock-bt-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+          bindTokens.set(bindToken, {
+            provider,
+            profile: { nickname: provider === 'WECHAT' ? '微信用户' : '支付宝用户' },
+            expiresAt: Date.now() + 5 * 60 * 1000,
+          });
+          return {
+            status: 'BIND_PENDING',
+            bindToken,
+            bindTokenExpiresIn: 300,
+            provider,
+            profile: { nickname: provider === 'WECHAT' ? '微信用户' : '支付宝用户' },
+          };
+        }
+        currentMe = { ...sampleStaff, boundProviders: Array.from(new Set([...(sampleStaff.boundProviders || []), provider])) };
+        return makeLoginResponse(currentMe);
+      },
+    },
+    // ── 绑定手机号 ──
+    {
+      match: /^\/api\/admin\/auth\/bind-phone$/,
+      method: 'post',
+      handle: (_m, body) => {
+        // 注：mockAdapter 未传入 headers，演示模式下仅校验输入
+        if (body?.smsCode !== '123456') return mockErr(401, '验证码不正确');
+        if (!/^1[3-9]\d{9}$/.test(body?.phone || '')) return mockErr(400, '手机号格式错误');
+        const subject = { ...sampleStaff, phone: body.phone };
+        currentMe = subject;
+        bindTokens.clear();
+        return makeLoginResponse(subject);
+      },
+    },
+    // ── 绑定 / 解绑 SSO ──
+    {
+      match: /^\/api\/admin\/auth\/bind\/(wechat|alipay)$/,
+      method: 'post',
+      handle: (m) => {
+        const provider = m[1].toUpperCase() as 'WECHAT' | 'ALIPAY';
+        currentMe = { ...currentMe, boundProviders: Array.from(new Set([...(currentMe.boundProviders || []), provider])) };
+        return null;
+      },
+    },
+    {
+      match: /^\/api\/admin\/auth\/bind\/(wechat|alipay)$/,
+      method: 'delete',
+      handle: (m) => {
+        const provider = m[1].toUpperCase();
+        const next = (currentMe.boundProviders || []).filter((p: string) => p !== provider);
+        if (!currentMe.hasPassword && next.length === 0) {
+          return mockErr(409, '解绑后将无登录方式，请先设置密码');
+        }
+        currentMe = { ...currentMe, boundProviders: next };
+        return null;
+      },
+    },
+    // ── 设置 / 修改 密码 ──
+    {
+      match: /^\/api\/admin\/auth\/set-password$/,
+      method: 'post',
+      handle: (_m, body) => {
+        if (currentMe.hasPassword) {
+          if (!body?.oldPassword) return mockErr(400, '请输入原密码');
+        } else {
+          if (body?.smsCode !== '123456') return mockErr(401, '验证码不正确');
+        }
+        if (!body?.newPassword || body.newPassword.length < 6) return mockErr(400, '新密码至少 6 位');
+        currentMe = { ...currentMe, hasPassword: true };
+        return null;
+      },
+    },
+    // ── 重置密码 ──
+    {
+      match: /^\/api\/admin\/auth\/reset-password$/,
+      method: 'post',
+      handle: (_m, body) => {
+        if (body?.smsCode !== '123456') return mockErr(401, '验证码不正确');
+        if (!/^1[3-9]\d{9}$/.test(body?.phone || '')) return mockErr(400, '手机号格式错误');
+        if (!body?.newPassword || body.newPassword.length < 6) return mockErr(400, '密码过短');
+        return null;
+      },
+    },
+    // ── me ──
+    {
+      match: /^\/api\/admin\/me$/,
+      method: 'get',
+      handle: () => currentMe,
+    },
+    // ── logout ──
+    {
+      match: /^\/api\/admin\/auth\/logout$/,
+      method: 'post',
+      handle: (_m, body) => {
+        if (body?.refreshToken) sessionsByRefresh.delete(body.refreshToken);
+        return null;
+      },
+    },
+    // ── refresh ──
+    {
+      match: /^\/api\/auth\/refresh$/,
+      method: 'post',
+      handle: (_m, body) => {
+        const old = body?.refreshToken;
+        if (!old || !sessionsByRefresh.has(old)) return mockErr(401, 'refresh token invalid');
+        const sess = sessionsByRefresh.get(old)!;
+        sessionsByRefresh.delete(old);
+        return makeLoginResponse(sess.subject);
+      },
+    },
+  ];
 }
