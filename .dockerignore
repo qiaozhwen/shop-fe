@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+.github
+.vscode
+.idea
+.superpowers
+docs
+\*.md
+.env.development
+.env.local
+.DS_Store
