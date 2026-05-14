@@ -1,84 +1,66 @@
-name: Build and Deploy
+name: Build & Deploy
 
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 env:
   IMAGE_NAME: shop-fe
   CONTAINER_NAME: shop-fe
-  SERVER_DEPLOY_PATH: /home/deploy # 服务器部署目录
+  HOST_PORT: 80
 
 jobs:
-  build-deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
-      # 代码检出
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # Node.js 环境
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to container registry
+        uses: docker/login-action@v3
         with:
-          node-version: 18
-          cache: 'npm'
+          registry: ${{ secrets.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
 
-      # 安装pnpm
-      - name: Install dependencies
-        run: npm install -f
-
-      # 项目构建
-      - name: Build project
-        run: npm run build
-
-      # Docker 镜像构建
-      - name: Build Docker image
+      - name: Compute image tags
+        id: meta
         run: |
-          docker build -t $IMAGE_NAME:latest .
+          IMAGE="${{ secrets.REGISTRY }}/${{ secrets.REGISTRY_NAMESPACE }}/${{ env.IMAGE_NAME }}"
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          echo "sha_tag=$IMAGE:${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          echo "latest_tag=$IMAGE:latest" >> $GITHUB_OUTPUT
 
-      # 保存镜像为 tar 文件
-      - name: Save Docker image
-        run: |
-          docker save -o image.tar $IMAGE_NAME:latest
-
-      # 传输镜像到服务器
-      - name: Transfer image to server
-        uses: appleboy/scp-action@v0.1.4
+      - name: Build and push
+        uses: docker/build-push-action@v6
         with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.SERVER_SSH_PORT || 22 }}
-          source: 'image.tar'
-          target: ${{ env.SERVER_DEPLOY_PATH }}
+          context: .
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.sha_tag }}
+            ${{ steps.meta.outputs.latest_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      # 服务器端部署
-      - name: Remote deploy
-        uses: appleboy/ssh-action@master
+      - name: Deploy on server via SSH
+        uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.SERVER_SSH_PORT || 22 }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ${{ env.SERVER_DEPLOY_PATH }}
-
-            # 停止并删除旧容器
-            docker stop ${{ env.CONTAINER_NAME }} || true
-            docker rm ${{ env.CONTAINER_NAME }} || true
-
-            # 加载新镜像
-            docker load -i image.tar
-
-            # 启动新容器
+            set -e
+            echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY }} -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
+            docker pull ${{ steps.meta.outputs.latest_tag }}
+            docker rm -f ${{ env.CONTAINER_NAME }} 2>/dev/null || true
             docker run -d \
               --name ${{ env.CONTAINER_NAME }} \
-              -p 8000:80 \
-              --restart always \
-              ${{ env.IMAGE_NAME }}:latest
-
-            # 清理临时文件
-            rm -f image.tar
-            echo "Deployment completed!"
+              --restart unless-stopped \
+              -p ${{ env.HOST_PORT }}:80 \
+              ${{ steps.meta.outputs.latest_tag }}
+            docker image prune -f

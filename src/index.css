@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@import "./config/theme.css";
+
+html, body, #root { height: 100%; }
+body {
+  font-family: Inter, -apple-system, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+.font-mono, .tnum { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-feature-settings: 'tnum'; }

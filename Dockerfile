@@ -1,31 +1,20 @@
-# Build stage
-FROM node:18-alpine as builder
-
+# ---------- build stage ----------
+FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package.json package-lock.json ./
 
-# Install pnpms
-RUN npm install -f
+RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
 
-# Copy source code
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
 COPY . .
+RUN pnpm build
 
-# Build the application
-RUN npm run build && \
-    # 清理旧版本文件
-    find /app/dist -name "*.html" -exec sed -i '/\.js\|\.css/s/?v=.*"/?v='$(date +%s)'"/g' {} \; 
+# ---------- runtime stage ----------
+FROM nginx:1.27-alpine AS runner
 
-# Production stage
-FROM nginx:alpine
-
-# Copy the built assets
+COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Expose port 80
 EXPOSE 80
-
-# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]

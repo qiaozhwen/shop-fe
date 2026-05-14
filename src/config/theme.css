@@ -1,0 +1,48 @@
+:root {
+  --primary: #16A34A;
+  --primary-600: #15803D;
+  --primary-50: #ECFDF3;
+  --primary-100: #D1FADF;
+  --accent: #F59E0B;
+  --accent-50: #FEF6E0;
+  --rail: #0F2B1F;
+  --rail-2: #1B4D36;
+  --bg: #F7F8F5;
+  --surface: #FFFFFF;
+  --border: #E7E9E2;
+  --border-strong: #D9DCD3;
+  --text: #1B1F1A;
+  --text-2: #5B6B5F;
+  --text-3: #8A958D;
+  --success: #15803D;
+  --warning: #B45309;
+  --danger: #B42318;
+  --info: #1D4ED8;
+  --shadow-sm: 0 1px 2px rgba(15,30,20,.04);
+  --shadow-md: 0 1px 3px rgba(15,30,20,.06), 0 4px 12px rgba(15,30,20,.04);
+  --radius-pill: 999px;
+  --radius-btn: 8px;
+  --radius-card: 12px;
+}
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-600: var(--primary-600);
+  --color-primary-50: var(--primary-50);
+  --color-primary-100: var(--primary-100);
+  --color-accent: var(--accent);
+  --color-accent-50: var(--accent-50);
+  --color-rail: var(--rail);
+  --color-rail-2: var(--rail-2);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+}
