@@ -25,9 +25,10 @@ export interface Member {
 }
 
 // 员工
-export type StaffRole = 'MANAGER' | 'CASHIER' | 'BUTCHER' | 'HELPER';
+export type StaffRole = 'ADMIN' | 'MANAGER' | 'CASHIER' | 'BUTCHER' | 'HELPER';
 
 export const STAFF_ROLE_LABEL: Record<StaffRole, string> = {
+  ADMIN: '系统管理员',
   MANAGER: '店长',
   CASHIER: '收银员',
   BUTCHER: '屠宰师傅',

@@ -217,12 +217,12 @@ export default function StoreListPage() {
               value={keyword}
               onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
             />
-            <Select value={status ?? ''} onValueChange={(v) => { setStatus(v ? v as StoreStatus : undefined); setPage(1); }}>
+            <Select value={status ?? 'ALL'} onValueChange={(v) => { setStatus(v === 'ALL' ? undefined : v as StoreStatus); setPage(1); }}>
               <SelectTrigger className="h-8 w-28 text-[12px]">
                 <SelectValue placeholder="状态" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">全部</SelectItem>
+                <SelectItem value="ALL">全部</SelectItem>
                 {(Object.keys(STORE_STATUS_LABEL) as StoreStatus[]).map((k) => (
                   <SelectItem key={k} value={k}>{STORE_STATUS_LABEL[k]}</SelectItem>
                 ))}

@@ -3,6 +3,8 @@ import { unwrap, getList } from '../helper';
 import type { Member, Staff, PricingItem, LoginDTO, LoginResult, UserInfo } from '@/types/people';
 import type { PageQuery } from '@/types/common';
 
+type StaffCreate = Omit<Staff, 'id'> & { password: string };
+
 export const memberApi = {
   list: (params?: PageQuery) => getList<Member>('/members', params),
   create: (body: Omit<Member, 'id' | 'points' | 'balance' | 'totalConsumption' | 'registeredAt'>) =>
@@ -13,7 +15,7 @@ export const memberApi = {
 export const staffApi = {
   list: (params?: PageQuery & { role?: string; storeId?: number }) =>
     getList<Staff>('/staff', params),
-  create: (body: Omit<Staff, 'id'>) => unwrap<Staff>(client.post('/staff', body)),
+  create: (body: StaffCreate) => unwrap<Staff>(client.post('/staff', body)),
   update: (id: number, body: Partial<Staff>) => unwrap<Staff>(client.put(`/staff/${id}`, body)),
   remove: (id: number) => unwrap<void>(client.delete(`/staff/${id}`)),
 };

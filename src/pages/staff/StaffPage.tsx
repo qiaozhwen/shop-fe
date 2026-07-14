@@ -46,6 +46,7 @@ import { toast } from '@/components/ui/toast';
 
 type RoleTone = 'warn' | 'info' | 'down' | 'mute';
 const ROLE_TONE: Record<StaffRole, RoleTone> = {
+  ADMIN: 'warn',
   MANAGER: 'warn',
   CASHIER: 'info',
   BUTCHER: 'down',
@@ -55,6 +56,7 @@ const ROLE_TONE: Record<StaffRole, RoleTone> = {
 type StaffFormValues = {
   name: string;
   phone: string;
+  password: string;
   role: StaffRole;
   storeId: number;
   hireDate: string;
@@ -67,6 +69,7 @@ const today = new Date().toISOString().slice(0, 10);
 const defaultFormValues: StaffFormValues = {
   name: '',
   phone: '',
+  password: '',
   role: 'CASHIER',
   storeId: 0,
   hireDate: today,
@@ -95,6 +98,7 @@ export default function StaffPage() {
       form.reset({
         name: row.name,
         phone: row.phone,
+        password: '',
         role: row.role,
         storeId: row.storeId,
         hireDate: row.hireDate ?? today,
@@ -109,9 +113,10 @@ export default function StaffPage() {
 
   const onSubmit = form.handleSubmit(async (v) => {
     const st = stores?.find((s) => s.id === v.storeId);
-    const payload = { ...v, storeName: st?.name ?? '', hireDate: v.hireDate };
+    const { password, ...staffFields } = v;
+    const payload = { ...staffFields, storeName: st?.name ?? '', hireDate: v.hireDate };
     if (editing) await update.mutateAsync({ id: editing.id, ...payload });
-    else await create.mutateAsync(payload);
+    else await create.mutateAsync({ ...payload, password });
     toast.success('已保存');
     setOpen(false);
   });
@@ -190,28 +195,28 @@ export default function StaffPage() {
         actions={
           <>
             <Select
-              value={role ?? ''}
-              onValueChange={(v) => { setRole(v ? v as StaffRole : undefined); setPage(1); }}
+              value={role ?? 'ALL'}
+              onValueChange={(v) => { setRole(v === 'ALL' ? undefined : v as StaffRole); setPage(1); }}
             >
               <SelectTrigger className="h-8 w-28 text-[12px]">
                 <SelectValue placeholder="岗位" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">全部</SelectItem>
+                <SelectItem value="ALL">全部</SelectItem>
                 {(Object.keys(STAFF_ROLE_LABEL) as StaffRole[]).map((k) => (
                   <SelectItem key={k} value={k}>{STAFF_ROLE_LABEL[k]}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Select
-              value={storeId ? String(storeId) : ''}
-              onValueChange={(v) => { setStoreId(v ? Number(v) : undefined); setPage(1); }}
+              value={storeId ? String(storeId) : 'ALL'}
+              onValueChange={(v) => { setStoreId(v === 'ALL' ? undefined : Number(v)); setPage(1); }}
             >
               <SelectTrigger className="h-8 w-36 text-[12px]">
                 <SelectValue placeholder="门店" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">全部门店</SelectItem>
+                <SelectItem value="ALL">全部门店</SelectItem>
                 {(stores ?? []).map((s) => (
                   <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
                 ))}
@@ -293,6 +298,25 @@ export default function StaffPage() {
                   </FormItem>
                 )}
               />
+              {!editing && (
+                <FormField
+                  control={form.control}
+                  name="password"
+                  rules={{
+                    required: '请输入初始密码',
+                    minLength: { value: 8, message: '初始密码至少 8 位' },
+                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>初始密码</FormLabel>
+                      <FormControl>
+                        <Input type="password" autoComplete="new-password" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <FormField
                 control={form.control}
                 name="role"

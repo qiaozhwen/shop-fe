@@ -1,16 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import {
-  Download, Plus, ChevronRight, Package,
+  Plus, ChevronRight, Package,
   ShoppingCart, Wrench, BarChart3, Users, AlertTriangle,
 } from 'lucide-react';
 
 import { useDashboard } from '@/hooks/usePeople';
 import { useSalesOrders } from '@/hooks/useSalesOrders';
 import { useInventory } from '@/hooks/useInventory';
-import { useAuthStore } from '@/store/useAuthStore';
-import { useAppStore } from '@/store/useAppStore';
-import { useStores } from '@/hooks/useStores';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardHeader, CardTitle, CardSub, CardBody } from '@/components/ui/card';
@@ -33,38 +30,12 @@ const ORDER_STATUS_MAP: Record<OrderStatus, StatusKey> = {
   REFUNDED: 'refunded',
 };
 
-/* ── mock placeholders when API returns empty ────────────────── */
-interface MockQueueRow { no: string; name: string; meta: string; status: StatusKey }
-const MOCK_QUEUE: MockQueueRow[] = [
-  { no: '#A0231', name: '三黄鸡 · 1.6kg · 切块', meta: '王师傅 · 3 分 24 秒', status: 'processing' },
-  { no: '#A0232', name: '老母鸡 · 2.1kg · 整只', meta: '李师傅 · 已完成', status: 'ready' },
-  { no: '#A0233', name: '乌鸡 × 2 · 整只', meta: '排队中 · 预计 6 分钟', status: 'pending' },
-  { no: '#A0234', name: '鸽子 × 3 · 去毛', meta: '排队中 · 预计 9 分钟', status: 'pending' },
-  { no: '#A0235', name: '三黄鸡 · 1.4kg · 半只', meta: '张师傅 · 1 分 02 秒', status: 'processing' },
-];
-
-interface MockInvRow { id: number; categoryName: string; quantity: number; capacity: number }
-const MOCK_INV: MockInvRow[] = [
-  { id: -1, categoryName: '三黄鸡', quantity: 12, capacity: 70 },
-  { id: -2, categoryName: '老母鸡', quantity: 14, capacity: 60 },
-  { id: -3, categoryName: '乌鸡', quantity: 31, capacity: 50 },
-  { id: -4, categoryName: '鸽子', quantity: 4, capacity: 50 },
-  { id: -5, categoryName: '麻鸭', quantity: 39, capacity: 50 },
-];
-
 const INV_CAPACITY_DEFAULT = 100;
 
 /* ── component ───────────────────────────────────────────────── */
 export default function DashboardPage() {
   const { data, isLoading } = useDashboard();
   const navigate = useNavigate();
-  // keep hooks — data used for contextual info display
-  const _user = useAuthStore((s) => s.subject);
-  const currentStoreId = useAppStore((s) => s.currentStoreId);
-  const { data: storesData } = useStores({ pageSize: 999 });
-  const currentStore = storesData?.list.find((s) => s.id === currentStoreId);
-  void _user; void currentStore;
-
   const { data: processingRes } = useSalesOrders({ status: 'PROCESSING', pageSize: 5 });
   const { data: inventoryRes } = useInventory({ pageSize: 10 });
 
@@ -93,16 +64,10 @@ export default function DashboardPage() {
         title="今日工作台"
         sub={dateStr}
         actions={
-          <>
-            <Button variant="ghost" size="md">
-              <Download size={14} />
-              导出日报
-            </Button>
-            <Button variant="primary" size="md" onClick={() => navigate('/pos')}>
-              <Plus size={14} />
-              快速开单
-            </Button>
-          </>
+          <Button variant="primary" size="md" onClick={() => navigate('/pos')}>
+            <Plus size={14} />
+            快速开单
+          </Button>
         }
       />
 
@@ -112,8 +77,7 @@ export default function DashboardPage() {
           label="今日营业额"
           value={`¥${data.todaySales.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           meta={[
-            { tone: 'up', text: '▲ 8.2%' },
-            { tone: 'mute', text: '较昨日' },
+            { tone: 'mute', text: '已支付订单' },
           ]}
           trend={trendValues}
         />
@@ -121,7 +85,6 @@ export default function DashboardPage() {
           label="订单数"
           value={String(data.todayOrders)}
           meta={[
-            { tone: 'up', text: '▲ 4.1%' },
             {
               tone: 'mute',
               text: `客单价 ¥${data.todayOrders > 0 ? (data.todaySales / data.todayOrders).toFixed(1) : '0'}`,
@@ -134,8 +97,7 @@ export default function DashboardPage() {
           value={String(data.processingPending)}
           valueColor="accent"
           meta={[
-            { tone: 'warn', text: '需关注' },
-            { tone: 'mute', text: '平均等待 4 分钟' },
+            { tone: data.processingPending > 0 ? 'warn' : 'mute', text: '进行中任务' },
           ]}
         />
         <KpiCard
@@ -155,30 +117,26 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>营业趋势</CardTitle>
-            <div className="flex gap-1 ml-auto bg-[#F1F3EE] p-[3px] rounded-[7px]">
-              <button className="px-3 py-1 text-[12px] text-text-2 font-medium rounded-[5px]">营业额</button>
-              <button className="px-3 py-1 text-[12px] text-text font-medium rounded-[5px] bg-white shadow-[var(--shadow-sm)]">订单量</button>
-              <button className="px-3 py-1 text-[12px] text-text-2 font-medium rounded-[5px]">客单价</button>
-            </div>
+            <CardSub>近 7 日</CardSub>
           </CardHeader>
           <CardBody className="pt-2">
             <LineChart
               data={trendData}
               xKey="date"
               lines={[
-                { key: 'orders', color: 'var(--primary)', name: '今日' },
-                { key: 'sales', color: '#B6C2BB', name: '参考' },
+                { key: 'orders', color: 'var(--primary)', name: '订单量' },
+                { key: 'sales', color: '#B6C2BB', name: '营业额' },
               ]}
               height={200}
             />
             <div className="flex gap-4 text-[12px] text-text-2 pt-2.5 border-t border-border mt-2">
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-0.5 bg-primary rounded inline-block" />今日
+                <span className="w-2.5 h-0.5 bg-primary rounded inline-block" />订单量
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-0.5 bg-[#B6C2BB] rounded inline-block border-b border-dashed" />昨日
+                <span className="w-2.5 h-0.5 bg-[#B6C2BB] rounded inline-block border-b border-dashed" />营业额
               </span>
-              <span className="ml-auto text-text-3">高峰：18:00 · {Math.max(...orderValues, 0)} 单</span>
+              <span className="ml-auto text-text-3">最高 {Math.max(...orderValues, 0)} 单</span>
             </div>
           </CardBody>
         </Card>
@@ -190,7 +148,7 @@ export default function DashboardPage() {
             <CardSub>{data.processingPending} 进行中</CardSub>
           </CardHeader>
           <div className="divide-y divide-border">
-            {(queueOrders.length > 0 ? queueOrders : null)?.map((order) => {
+            {queueOrders.map((order) => {
               const item = order.items[0];
               return (
                 <div key={order.id} className="flex items-center gap-3 px-5 py-3">
@@ -211,16 +169,10 @@ export default function DashboardPage() {
                   />
                 </div>
               );
-            }) ?? MOCK_QUEUE.map((row) => (
-              <div key={row.no} className="flex items-center gap-3 px-5 py-3">
-                <span className="font-mono text-[12px] text-text-3 w-14 shrink-0">{row.no}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-medium text-text truncate">{row.name}</div>
-                  <div className="text-[11.5px] text-text-3 mt-0.5">{row.meta}</div>
-                </div>
-                <StatusPill status={row.status} pulse={row.status === 'processing'} />
-              </div>
-            ))}
+            })}
+            {queueOrders.length === 0 && (
+              <div className="px-5 py-8 text-center text-[13px] text-text-3">暂无加工任务</div>
+            )}
           </div>
         </Card>
       </div>
@@ -234,15 +186,12 @@ export default function DashboardPage() {
             <CardSub>实时</CardSub>
           </CardHeader>
           <div className="divide-y divide-border">
-            {(invItems.length > 0
-              ? invItems.slice(0, 6).map((item) => ({
+            {invItems.slice(0, 6).map((item) => ({
                   id: item.id,
                   categoryName: item.categoryName,
                   quantity: item.quantity,
                   capacity: INV_CAPACITY_DEFAULT,
-                }))
-              : MOCK_INV
-            ).map((row) => (
+                })).map((row) => (
               <div key={row.id} className="flex items-center gap-3.5 px-5 py-3">
                 <div className="w-9 h-9 rounded-[8px] bg-primary-50 text-primary flex items-center justify-center shrink-0">
                   <Package size={16} />
@@ -263,6 +212,9 @@ export default function DashboardPage() {
                 </div>
               </div>
             ))}
+            {invItems.length === 0 && (
+              <div className="px-5 py-8 text-center text-[13px] text-text-3">暂无库存数据</div>
+            )}
           </div>
         </Card>
 

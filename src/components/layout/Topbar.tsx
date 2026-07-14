@@ -1,7 +1,6 @@
-import { Bell, LogOut, Search } from 'lucide-react';
+import { LogOut, ShieldCheck } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -14,6 +13,15 @@ import {
 import { modules } from '@/config/nav';
 import { useAuthStore } from '@/store/useAuthStore';
 import { authApi } from '@/api/modules/authApi';
+import { useAllStores } from '@/hooks/useStores';
+import { useAppStore } from '@/store/useAppStore';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 function useBreadcrumb() {
   const { pathname } = useLocation();
@@ -27,8 +35,9 @@ export function Topbar() {
   const bc = useBreadcrumb();
   const navigate = useNavigate();
   const subject = useAuthStore((state) => state.subject);
-  // TODO: wire useAppStore.currentStoreId — store only exposes currentStoreId (number), no name
-  const storeName = '总店';
+  const currentStoreId = useAppStore((state) => state.currentStoreId);
+  const setCurrentStore = useAppStore((state) => state.setCurrentStore);
+  const { data: stores = [] } = useAllStores();
 
   const handleLogout = async () => {
     const refreshToken = useAuthStore.getState().refreshToken ?? undefined;
@@ -54,21 +63,19 @@ export function Topbar() {
         ) : null}
       </div>
       <div className="flex-1" />
-      <button className="inline-flex items-center gap-2 px-3 h-8 rounded-[8px] border border-border text-[13px] text-text-2 hover:bg-[#F1F3EE]">
-        <span className="relative flex w-2 h-2">
-          <span className="absolute inline-flex w-full h-full rounded-full bg-primary opacity-75 animate-ping" />
-          <span className="relative inline-flex rounded-full w-2 h-2 bg-primary" />
-        </span>
-        {storeName}
-      </button>
-      <div className="relative">
-        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-3" />
-        <Input className="h-8 w-56 pl-8 text-[12px]" placeholder="搜索订单 / 会员 / SKU" />
-      </div>
-      <button className="relative w-8 h-8 rounded-[8px] hover:bg-[#F1F3EE] flex items-center justify-center text-text-2">
-        <Bell size={16} />
-        <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-danger" />
-      </button>
+      <Select
+        value={currentStoreId == null ? undefined : String(currentStoreId)}
+        onValueChange={(value) => setCurrentStore(Number(value))}
+      >
+        <SelectTrigger className="h-8 w-40 text-[12px]">
+          <SelectValue placeholder="选择门店" />
+        </SelectTrigger>
+        <SelectContent>
+          {stores.map((store) => (
+            <SelectItem key={store.id} value={String(store.id)}>{store.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
@@ -87,6 +94,11 @@ export function Topbar() {
               <span className="text-[11px] text-text-3 mt-0.5">{subject?.roles?.join(', ') || '员工'}</span>
             </div>
           </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => navigate('/account/security')}>
+            <ShieldCheck size={14} className="mr-2" />
+            账号安全
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onSelect={handleLogout}

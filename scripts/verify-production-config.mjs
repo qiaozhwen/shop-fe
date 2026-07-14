@@ -30,6 +30,7 @@ forbidMatch('src/router/index.tsx', /BindPhonePage|SsoCallbackPage|ResetPassword
 forbidMatch('src/components/layout/Topbar.tsx', /待开发/, 'dead profile action must not ship');
 forbidMatch('src/config/nav.ts', /settingsItem|path: '\/settings'/, 'undefined settings navigation must not ship');
 forbidMatch('src/components/layout/Rail.tsx', /settingsItem|to=["']\/settings/, 'undefined settings navigation must not ship');
+requireMatch('src/pages/staff/StaffPage.tsx', /name="password"/, 'staff creation must collect an initial login password');
 
 if (failures.length) {
   console.error(`Production delivery configuration failed (${failures.length}):`);
