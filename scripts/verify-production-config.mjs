@@ -48,6 +48,7 @@ forbidMatch('src/config/nav.ts', /settingsItem|path: '\/settings'/, 'undefined s
 forbidMatch('src/components/layout/Rail.tsx', /settingsItem|to=["']\/settings/, 'undefined settings navigation must not ship');
 requireMatch('src/pages/staff/StaffPage.tsx', /name="password"/, 'staff creation must collect an initial login password');
 requireMatch('package.json', /"prebuild": "pnpm test:production-config"/, 'production checks must run automatically before every build');
+forbidMatch('.dockerignore', /^\.github\/?$/m, 'Docker build context must include the workflow inspected by the production gate');
 requireMatch('src/pages/pos/PosPage.tsx', /xl:grid-cols-\[1\.4fr_1\.3fr_1fr\]/, 'POS workspace must collapse to a single column on smaller screens');
 forbidMatch('src/pages/pos/PosPage.tsx', /update\(idx, \{ unitPrice:/, 'POS unit prices must not be editable client-side');
 
