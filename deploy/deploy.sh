@@ -36,9 +36,12 @@ docker pull "${IMAGE}"
 echo "==> 停止并移除旧容器 ${CONTAINER_NAME}（若存在）"
 docker rm -f "${CONTAINER_NAME}" 2>/dev/null || true
 
+docker network inspect shop-network >/dev/null 2>&1 || docker network create shop-network
+
 echo "==> 启动新容器"
 docker run -d \
   --name "${CONTAINER_NAME}" \
+  --network shop-network \
   --restart unless-stopped \
   -p "${HOST_PORT}:80" \
   "${IMAGE}"
