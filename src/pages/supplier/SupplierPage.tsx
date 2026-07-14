@@ -96,8 +96,8 @@ export default function SupplierPage() {
             phone: row.phone,
             address: row.address ?? '',
             category: row.category ?? '',
-            level: row.level,
-            enabled: row.enabled,
+            level: row.level ?? 'C',
+            enabled: row.enabled !== false,
             remark: row.remark ?? '',
           }
         : defaultValues,
@@ -134,7 +134,7 @@ export default function SupplierPage() {
       header: '等级',
       accessorKey: 'level',
       cell: ({ getValue }) => {
-        const cfg = LEVEL_TONE[getValue<Supplier['level']>()];
+        const cfg = LEVEL_TONE[getValue<Supplier['level']>()] ?? LEVEL_TONE.C;
         return <Pill tone={cfg.tone}>{cfg.label}</Pill>;
       },
     },
@@ -142,7 +142,7 @@ export default function SupplierPage() {
       header: '状态',
       accessorKey: 'enabled',
       cell: ({ getValue }) =>
-        getValue<boolean>() ? <Pill tone="up">启用</Pill> : <Pill tone="mute">停用</Pill>,
+        getValue<boolean>() !== false ? <Pill tone="up">启用</Pill> : <Pill tone="mute">停用</Pill>,
     },
     {
       header: '操作',

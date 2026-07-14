@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "pnpm test:production-config",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test:production-config": "node scripts/verify-production-config.mjs"

@@ -65,4 +65,14 @@ jobs:
               --restart unless-stopped \
               -p ${{ env.HOST_PORT }}:80 \
               ${{ steps.meta.outputs.latest_tag }}
+            for i in $(seq 1 30); do
+              STATUS=$(docker inspect -f '{{.State.Health.Status}}' ${{ env.CONTAINER_NAME }} 2>/dev/null || true)
+              [ "$STATUS" = "healthy" ] && break
+              if [ "$STATUS" = "unhealthy" ]; then docker logs ${{ env.CONTAINER_NAME }}; exit 1; fi
+              sleep 2
+            done
+            [ "$(docker inspect -f '{{.State.Health.Status}}' ${{ env.CONTAINER_NAME }})" = "healthy" ] || {
+              docker logs ${{ env.CONTAINER_NAME }}
+              exit 1
+            }
             docker image prune -f

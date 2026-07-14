@@ -46,6 +46,21 @@ docker run -d \
   -p "${HOST_PORT}:80" \
   "${IMAGE}"
 
+echo "==> 等待容器健康检查"
+for _ in $(seq 1 30); do
+  STATUS="$(docker inspect -f '{{.State.Health.Status}}' "${CONTAINER_NAME}" 2>/dev/null || true)"
+  [[ "${STATUS}" == "healthy" ]] && break
+  if [[ "${STATUS}" == "unhealthy" ]]; then
+    docker logs "${CONTAINER_NAME}"
+    exit 1
+  fi
+  sleep 2
+done
+[[ "$(docker inspect -f '{{.State.Health.Status}}' "${CONTAINER_NAME}")" == "healthy" ]] || {
+  docker logs "${CONTAINER_NAME}"
+  exit 1
+}
+
 echo "==> 清理悬挂镜像"
 docker image prune -f
 

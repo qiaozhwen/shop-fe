@@ -1,5 +1,5 @@
-import { LogOut, ShieldCheck } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { LogOut, Menu, ShieldCheck } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -22,6 +22,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { cn } from '@/lib/cn';
 
 function useBreadcrumb() {
   const { pathname } = useLocation();
@@ -29,6 +38,49 @@ function useBreadcrumb() {
   if (!mod) return null;
   const item = mod.groups.flatMap((g) => g.items).find((it) => it.path === pathname);
   return { module: mod.label, item: item?.label };
+}
+
+function MobileNavigation() {
+  const { pathname } = useLocation();
+
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <button
+          type="button"
+          aria-label="打开导航"
+          className="lg:hidden inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] text-text-2 hover:bg-bg"
+        >
+          <Menu size={19} />
+        </button>
+      </SheetTrigger>
+      <SheetContent className="w-[320px] max-w-[86vw] p-0 overflow-y-auto">
+        <SheetHeader className="sticky top-0 z-10 mb-0 border-b border-border bg-surface px-5 py-4">
+          <SheetTitle>功能导航</SheetTitle>
+        </SheetHeader>
+        <nav className="px-3 py-3">
+          {modules.map((module) => (
+            <div key={module.key} className="mb-4">
+              <div className="px-2 pb-1 text-[11px] font-semibold text-text-3">{module.label}</div>
+              {module.groups.flatMap((group) => group.items).map((item) => (
+                <SheetClose asChild key={item.path}>
+                  <Link
+                    to={item.path}
+                    className={cn(
+                      'block h-9 rounded-[6px] px-3 text-[13px] leading-9 text-text-2 hover:bg-bg',
+                      pathname === item.path && 'bg-primary-50 font-medium text-primary',
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                </SheetClose>
+              ))}
+            </div>
+          ))}
+        </nav>
+      </SheetContent>
+    </Sheet>
+  );
 }
 
 export function Topbar() {
@@ -48,8 +100,9 @@ export function Topbar() {
   };
 
   return (
-    <header className="h-14 shrink-0 border-b border-border bg-surface flex items-center px-6 gap-4">
-      <div className="text-[13px] text-text-2">
+    <header className="h-14 shrink-0 border-b border-border bg-surface flex items-center px-3 sm:px-4 lg:px-6 gap-2 sm:gap-4">
+      <MobileNavigation />
+      <div className="hidden sm:block min-w-0 truncate text-[13px] text-text-2">
         {bc ? (
           <>
             <span>{bc.module}</span>
@@ -67,7 +120,7 @@ export function Topbar() {
         value={currentStoreId == null ? undefined : String(currentStoreId)}
         onValueChange={(value) => setCurrentStore(Number(value))}
       >
-        <SelectTrigger className="h-8 w-40 text-[12px]">
+        <SelectTrigger className="h-8 w-28 sm:w-40 text-[12px]">
           <SelectValue placeholder="选择门店" />
         </SelectTrigger>
         <SelectContent>

@@ -3,7 +3,7 @@ import { processingApi } from '@/api/modules/processingApi';
 import type { PageQuery } from '@/types/common';
 import type { ProcessingStatus } from '@/types/processing';
 
-export function useProcessingTasks(params?: PageQuery & { status?: ProcessingStatus }) {
+export function useProcessingTasks(params?: PageQuery & { status?: ProcessingStatus; active?: boolean }) {
   return useQuery({
     queryKey: ['processingTasks', params],
     queryFn: () => processingApi.list(params),

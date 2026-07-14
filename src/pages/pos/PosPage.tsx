@@ -28,6 +28,7 @@ interface CartItem {
   categoryId: number;
   categoryName: string;
   unitPrice: number;
+  unit: PoultryCategory['unit'];
   quantity: number;
   weight: number;
   processMethod: ProcessMethod;
@@ -65,7 +66,8 @@ export default function PosPage() {
   const [memberPhone, setMemberPhone] = useState('');
 
   const total = useMemo(
-    () => cart.reduce((s: number, c: CartItem) => s + c.weight * c.unitPrice + c.processFee, 0),
+    () => cart.reduce((s: number, c: CartItem) =>
+      s + (c.unit === 'PIECE' ? c.quantity : c.weight) * c.unitPrice + c.processFee, 0),
     [cart],
   );
   const payable = Math.max(0, total - discount);
@@ -87,6 +89,7 @@ export default function PosPage() {
         categoryId: cat.id,
         categoryName: cat.name,
         unitPrice: cat.basePrice,
+        unit: cat.unit,
         quantity: 1,
         weight: cat.avgWeight,
         processMethod: 'SLAUGHTER',
@@ -132,7 +135,7 @@ export default function PosPage() {
           unitPrice: c.unitPrice,
           processMethod: c.processMethod,
           processFee: c.processFee,
-          subtotal: c.weight * c.unitPrice + c.processFee,
+          subtotal: (c.unit === 'PIECE' ? c.quantity : c.weight) * c.unitPrice + c.processFee,
         })),
       });
       toast.success(`下单成功：${order.orderNo}`);
@@ -147,9 +150,9 @@ export default function PosPage() {
   const enabledCats = (cats ?? []).filter((c: PoultryCategory) => c.enabled);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-2rem)] min-h-[760px] gap-4">
+    <div className="flex flex-col gap-4 xl:h-[calc(100vh-2rem)] xl:min-h-[760px]">
       {/* Top Bar */}
-      <div className="flex items-center gap-4 px-1">
+      <div className="flex flex-wrap items-center gap-3 px-1">
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 rounded-[10px] bg-primary text-white flex items-center justify-center shadow-[var(--shadow-sm)]">
             <ShoppingCart className="w-5 h-5" />
@@ -159,15 +162,15 @@ export default function PosPage() {
             <div className="text-[12px] text-text-3">触屏快速下单</div>
           </div>
         </div>
-        <div className="flex-1" />
-        <div className="flex items-center gap-2 px-3 h-12 rounded-[10px] bg-surface border border-border">
+        <div className="hidden sm:block flex-1" />
+        <div className="flex w-full sm:w-auto items-center gap-2 px-3 h-12 rounded-[8px] bg-surface border border-border">
           <StoreIcon className="w-4 h-4 text-primary" />
           <span className="text-[13px] text-text-2">门店</span>
           <Select
             value={currentStoreId ? String(currentStoreId) : undefined}
             onValueChange={(v: string) => setCurrentStore(Number(v))}
           >
-            <SelectTrigger className="h-10 min-w-[180px] border-0 bg-transparent focus:ring-0 text-[14px] font-medium">
+            <SelectTrigger className="h-10 min-w-0 sm:min-w-[180px] flex-1 border-0 bg-transparent focus:ring-0 text-[14px] font-medium">
               <SelectValue placeholder="请选择门店" />
             </SelectTrigger>
             <SelectContent>
@@ -182,7 +185,7 @@ export default function PosPage() {
         <Button
           variant="ghost"
           size="lg"
-          className="h-12 px-5 text-[14px]"
+          className="h-12 px-5 text-[14px] sm:w-auto w-full"
           onClick={() => setMemberOpen(true)}
         >
           <User className="w-5 h-5" />
@@ -191,7 +194,7 @@ export default function PosPage() {
       </div>
 
       {/* 3-column workspace */}
-      <div className="grid grid-cols-[1.4fr_1.3fr_1fr] gap-4 flex-1 min-h-0">
+      <div className="grid grid-cols-1 xl:grid-cols-[1.4fr_1.3fr_1fr] gap-4 xl:flex-1 xl:min-h-0">
         {/* LEFT: Category picker */}
         <Card className="flex flex-col min-h-0">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
@@ -202,7 +205,7 @@ export default function PosPage() {
             <Pill tone="info">{enabledCats.length} 项可选</Pill>
           </div>
           <div className="flex-1 overflow-auto p-4">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {enabledCats.map((c: PoultryCategory) => {
                 const Icon = SPECIES_ICON[c.species] ?? TagIcon;
                 const inCart = cart.some((ci: CartItem) => ci.categoryId === c.id);
@@ -248,7 +251,7 @@ export default function PosPage() {
                 );
               })}
               {enabledCats.length === 0 && (
-                <div className="col-span-3 py-16 text-center text-text-3 text-[13px]">
+                <div className="col-span-2 sm:col-span-3 py-16 text-center text-text-3 text-[13px]">
                   暂无可售品类
                 </div>
               )}
@@ -282,7 +285,7 @@ export default function PosPage() {
               </div>
             ) : (
               cart.map((item: CartItem, idx: number) => {
-                const subtotal = item.weight * item.unitPrice + item.processFee;
+                const subtotal = (item.unit === 'PIECE' ? item.quantity : item.weight) * item.unitPrice + item.processFee;
                 return (
                   <div
                     key={item.categoryId}
@@ -348,14 +351,9 @@ export default function PosPage() {
                         <span className="text-[12px] text-text-2">单价(元)</span>
                         <Input
                           type="number"
-                          step={0.1}
-                          min={0}
-                          inputMode="decimal"
                           value={item.unitPrice}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            update(idx, { unitPrice: Number(e.target.value) || 0 })
-                          }
-                          className="h-12 text-[15px] font-semibold tnum"
+                          readOnly
+                          className="h-12 text-[15px] font-semibold tnum bg-bg"
                         />
                       </label>
                     </div>

@@ -4,7 +4,7 @@ import type { ProcessingTask, ProcessingStatus } from '@/types/processing';
 import type { PageQuery } from '@/types/common';
 
 export const processingApi = {
-  list: (params?: PageQuery & { status?: ProcessingStatus }) =>
+  list: (params?: PageQuery & { status?: ProcessingStatus; active?: boolean }) =>
     getList<ProcessingTask>('/processing-tasks', params),
   advance: (id: number) => unwrap<ProcessingTask>(client.post(`/processing-tasks/${id}/advance`)),
   assign: (id: number, body: { workerId: number; workerName: string }) =>

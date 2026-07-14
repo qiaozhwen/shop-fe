@@ -13,7 +13,7 @@ export function Rail() {
   const isActive = (p: string) => pathname === p || pathname.startsWith(p + '/');
   return (
     <TooltipProvider delayDuration={150} skipDelayDuration={300}>
-      <aside className="w-[60px] shrink-0 bg-rail flex flex-col items-center py-3 gap-1">
+      <aside className="hidden md:flex w-[60px] shrink-0 bg-rail flex-col items-center py-3 gap-1">
         <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center text-white text-[13px] font-bold mb-2">
           SH
         </div>

@@ -7,7 +7,7 @@ export function Secondary() {
   const current =
     modules.find((m) => pathname === m.path || pathname.startsWith(m.path + '/')) ?? modules[0];
   return (
-    <aside className="w-[200px] shrink-0 bg-surface border-r border-border flex flex-col">
+    <aside className="hidden lg:flex w-[200px] shrink-0 bg-surface border-r border-border flex-col">
       <div className="px-4 py-4 border-b border-border">
         <div className="text-[14px] font-semibold text-text">{current.label}</div>
         <div className="text-[12px] text-text-3 mt-0.5">{current.sub}</div>

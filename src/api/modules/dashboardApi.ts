@@ -6,6 +6,7 @@ export interface DashboardSummary {
   todayOrders: number;
   poultryStock: number;
   todayLoss: number;
+  lowStockCount: number;
   processingPending: number;
   memberCount: number;
   storeCount: number;

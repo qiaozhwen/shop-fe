@@ -2,12 +2,12 @@ import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import {
   Plus, ChevronRight, Package,
-  ShoppingCart, Wrench, BarChart3, Users, AlertTriangle,
+  ShoppingCart, Wrench, AlertTriangle,
 } from 'lucide-react';
 
 import { useDashboard } from '@/hooks/usePeople';
-import { useSalesOrders } from '@/hooks/useSalesOrders';
 import { useInventory } from '@/hooks/useInventory';
+import { useProcessingTasks } from '@/hooks/useProcessing';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardHeader, CardTitle, CardSub, CardBody } from '@/components/ui/card';
@@ -17,17 +17,17 @@ import { StatusPill } from '@/components/data/StatusPill';
 import { InventoryBar } from '@/components/data/InventoryBar';
 import { LineChart } from '@/components/chart/LineChart';
 import type { StatusKey } from '@/components/data/StatusPill';
-import type { OrderStatus } from '@/types/order';
+import type { ProcessingStatus } from '@/types/processing';
 
 /* ── status mapping ─────────────────────────────────────────── */
-const ORDER_STATUS_MAP: Record<OrderStatus, StatusKey> = {
-  PENDING: 'pending',
-  PAID: 'pending',
-  PROCESSING: 'processing',
-  READY: 'ready',
-  COMPLETED: 'completed',
+const PROCESSING_STATUS_MAP: Record<ProcessingStatus, StatusKey> = {
+  WAIT_SLAUGHTER: 'pending',
+  SLAUGHTERING: 'processing',
+  PLUCKING: 'processing',
+  EVISCERATING: 'processing',
+  PACKING: 'ready',
+  DELIVERED: 'completed',
   CANCELED: 'cancelled',
-  REFUNDED: 'refunded',
 };
 
 const INV_CAPACITY_DEFAULT = 100;
@@ -36,8 +36,8 @@ const INV_CAPACITY_DEFAULT = 100;
 export default function DashboardPage() {
   const { data, isLoading } = useDashboard();
   const navigate = useNavigate();
-  const { data: processingRes } = useSalesOrders({ status: 'PROCESSING', pageSize: 5 });
-  const { data: inventoryRes } = useInventory({ pageSize: 10 });
+  const { data: processingRes } = useProcessingTasks({ pageSize: 5, active: true });
+  const { data: inventoryRes } = useInventory({ pageSize: 6 });
 
   if (isLoading || !data) {
     return (
@@ -51,9 +51,32 @@ export default function DashboardPage() {
   const trendValues = data.salesTrend.map((s) => s.sales);
   const orderValues = data.salesTrend.map((s) => s.orders);
 
-  const queueOrders = processingRes?.list ?? [];
+  const queueTasks = processingRes?.list ?? [];
   const invItems = inventoryRes?.list ?? [];
-  const lowStockCount = invItems.filter((i) => i.quantity < 20).length;
+  const lowStockCount = data.lowStockCount;
+  const todos = [
+    ...(lowStockCount > 0 ? [{
+      color: 'var(--danger)',
+      icon: <AlertTriangle size={14} />,
+      title: `库存预警：${lowStockCount} 类库存需补货`,
+      meta: '建议及时补货 · 实时',
+      action: () => navigate('/inventory'),
+    }] : []),
+    ...(data.processingPending > 0 ? [{
+      color: 'var(--accent)',
+      icon: <Wrench size={14} />,
+      title: `${data.processingPending} 个加工任务进行中`,
+      meta: '请关注档口状态 · 实时',
+      action: () => navigate('/sales/processing'),
+    }] : []),
+    ...(data.todayOrders > 0 ? [{
+      color: 'var(--primary)',
+      icon: <ShoppingCart size={14} />,
+      title: `今日已售 ${data.todayOrders} 单`,
+      meta: `进账 ¥${data.todaySales.toFixed(2)} · 实时`,
+      action: () => navigate('/sales/orders'),
+    }] : []),
+  ];
 
   const dateStr = dayjs().format('YYYY-MM-DD ddd · 数据每 30 秒更新');
 
@@ -102,7 +125,7 @@ export default function DashboardPage() {
         />
         <KpiCard
           label="库存预警"
-          value={String(lowStockCount || data.todayLoss)}
+          value={String(lowStockCount)}
           valueColor="danger"
           meta={[
             { tone: 'down', text: '需补货' },
@@ -148,29 +171,26 @@ export default function DashboardPage() {
             <CardSub>{data.processingPending} 进行中</CardSub>
           </CardHeader>
           <div className="divide-y divide-border">
-            {queueOrders.map((order) => {
-              const item = order.items[0];
-              return (
-                <div key={order.id} className="flex items-center gap-3 px-5 py-3">
+            {queueTasks.map((task) => (
+                <div key={task.id} className="flex items-center gap-3 px-5 py-3">
                   <span className="font-mono text-[12px] text-text-3 w-14 shrink-0">
-                    #{order.orderNo.slice(-5)}
+                    #{task.taskNo.slice(-5)}
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="text-[13px] font-medium text-text truncate">
-                      {item ? `${item.categoryName} · ${item.weight}kg` : '—'}
+                      {task.categoryName} · {task.weight}斤
                     </div>
                     <div className="text-[11.5px] text-text-3 mt-0.5">
-                      {order.memberName ?? order.customerPhone ?? '散客'} · {dayjs(order.createdAt).format('HH:mm')}
+                      {task.workerName ?? '待分配'} · {dayjs(task.createdAt).format('HH:mm')}
                     </div>
                   </div>
                   <StatusPill
-                    status={ORDER_STATUS_MAP[order.status]}
-                    pulse={order.status === 'PROCESSING'}
+                    status={PROCESSING_STATUS_MAP[task.status]}
+                    pulse={!['DELIVERED', 'CANCELED'].includes(task.status)}
                   />
                 </div>
-              );
-            })}
-            {queueOrders.length === 0 && (
+            ))}
+            {queueTasks.length === 0 && (
               <div className="px-5 py-8 text-center text-[13px] text-text-3">暂无加工任务</div>
             )}
           </div>
@@ -261,48 +281,12 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>待办事项</CardTitle>
-            <CardSub>{data.processingPending + 3} 项</CardSub>
+            <CardSub>{todos.length} 项</CardSub>
           </CardHeader>
           <div className="divide-y divide-border">
-            {[
-              {
-                color: 'var(--danger)',
-                icon: <AlertTriangle size={14} />,
-                title: `库存预警：${lowStockCount || 3} 类品种需补货`,
-                meta: '建议立刻补货 · 刚刚',
-                action: () => navigate('/inventory'),
-              },
-              {
-                color: 'var(--accent)',
-                icon: <Wrench size={14} />,
-                title: `${data.processingPending} 个加工任务进行中`,
-                meta: '请关注档口状态 · 实时',
-                action: () => navigate('/processing'),
-              },
-              {
-                color: 'var(--info)',
-                icon: <Users size={14} />,
-                title: '会员消费报表已生成',
-                meta: `共 ${data.memberCount} 位会员 · 今日`,
-                action: () => navigate('/members'),
-              },
-              {
-                color: 'var(--text-3)',
-                icon: <BarChart3 size={14} />,
-                title: '日结报表待提交',
-                meta: '22:00 截止 · 还有数项',
-                action: () => navigate('/reports'),
-              },
-              {
-                color: 'var(--primary)',
-                icon: <ShoppingCart size={14} />,
-                title: `今日已售 ${data.todayOrders} 单`,
-                meta: `进账 ¥${data.todaySales.toFixed(2)} · 实时`,
-                action: () => navigate('/sales-orders'),
-              },
-            ].map((todo, idx) => (
+            {todos.map((todo) => (
               <div
-                key={idx}
+                key={todo.title}
                 className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-[#F7F8F5] transition-colors"
                 onClick={todo.action}
               >
@@ -317,6 +301,9 @@ export default function DashboardPage() {
                 <ChevronRight size={14} className="text-text-3 shrink-0" />
               </div>
             ))}
+            {todos.length === 0 && (
+              <div className="px-5 py-8 text-center text-[13px] text-text-3">暂无待办事项</div>
+            )}
           </div>
         </Card>
       </div>
