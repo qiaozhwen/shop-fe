@@ -146,7 +146,8 @@ docker image prune -f              # 清理悬挂镜像
 
 ---
 
-## 七、后续接入后端时
+## 七、后端集成
 
-修改 [deploy/nginx.conf](nginx.conf) 解开 `/api/` 反向代理段，把 `proxy_pass` 指向后端容器或地址，
-然后在 [.env.production](../.env.production) 把 `VITE_USE_MOCK` 改成 `false`，重新 push 即可。
+生产镜像已启用 `/api/` 反向代理并关闭 Mock。前端容器和名为 `shop-be` 的后端容器必须同时加入 `shop-network`；GitHub Actions 与手动部署脚本都会自动创建并加入该网络。
+
+完整 PostgreSQL、后端、前端编排以及备份、恢复、升级、回滚和密钥轮换说明位于 `shop-be` 仓库的 `docker-compose.yml` 与 `README.md`。

@@ -23,6 +23,8 @@ requireMatch('.github/workflows/deploy.yml', /docker network inspect shop-networ
 requireMatch('.github/workflows/deploy.yml', /^\s*--network shop-network \\/m, 'frontend container must join the shared Docker network');
 requireMatch('deploy/deploy.sh', /docker network inspect shop-network[^\n]*\|\| docker network create shop-network/, 'manual deployment must create the shared Docker network');
 requireMatch('deploy/deploy.sh', /^\s*--network shop-network \\/m, 'manually deployed frontend must join the shared Docker network');
+requireMatch('Dockerfile', /^HEALTHCHECK /m, 'frontend image must expose a container health check');
+forbidMatch('deploy/README.md', /后续接入后端时/, 'handoff documentation must describe the active backend integration');
 
 forbidMatch('src/pages/login/LoginPage.tsx', /演示|我已扫码|短信验证码|扫码登录|13800000000|MOCK_CODE/, 'demo, SMS, and SSO login UI must not ship');
 forbidMatch('src/pages/account/SecurityPage.tsx', /SetFirstPasswordForm|BindList|sendSms|第三方登录|短信验证码/, 'unsupported SMS/SSO account controls must not ship');
