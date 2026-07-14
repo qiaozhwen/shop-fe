@@ -1,4 +1,4 @@
-import { Bell, LogOut, Search, User as UserIcon } from 'lucide-react';
+import { Bell, LogOut, Search } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,7 @@ function useBreadcrumb() {
 export function Topbar() {
   const bc = useBreadcrumb();
   const navigate = useNavigate();
+  const subject = useAuthStore((state) => state.subject);
   // TODO: wire useAppStore.currentStoreId — store only exposes currentStoreId (number), no name
   const storeName = '总店';
 
@@ -82,15 +83,10 @@ export function Topbar() {
         <DropdownMenuContent align="end" sideOffset={8} className="w-44">
           <DropdownMenuLabel>
             <div className="flex flex-col">
-              <span className="text-[13px] font-medium text-text">乔振</span>
-              <span className="text-[11px] text-text-3 mt-0.5">店长</span>
+              <span className="text-[13px] font-medium text-text">{subject?.nickname || subject?.phone || '当前账号'}</span>
+              <span className="text-[11px] text-text-3 mt-0.5">{subject?.roles?.join(', ') || '员工'}</span>
             </div>
           </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => toast.info('个人资料 — 待开发')}>
-            <UserIcon size={14} className="mr-2" />
-            个人资料
-          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onSelect={handleLogout}

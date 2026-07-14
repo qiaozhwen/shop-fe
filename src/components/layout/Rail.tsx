@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { modules, settingsItem } from '@/config/nav';
+import { modules } from '@/config/nav';
 import { cn } from '@/lib/cn';
 import {
   Tooltip,
@@ -44,22 +44,6 @@ export function Rail() {
             </Tooltip>
           );
         })}
-        <div className="mt-auto">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                to={settingsItem.path}
-                aria-label="设置"
-                className="w-10 h-10 rounded-[10px] flex items-center justify-center text-white/70 hover:text-white hover:bg-rail-2"
-              >
-                <settingsItem.icon size={18} strokeWidth={1.8} />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={10}>
-              设置
-            </TooltipContent>
-          </Tooltip>
-        </div>
       </aside>
     </TooltipProvider>
   );

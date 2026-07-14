@@ -11,9 +11,6 @@ const PageLoader = () => (
 );
 
 const LoginPage = lazy(() => import('@/pages/login/LoginPage'));
-const BindPhonePage = lazy(() => import('@/pages/auth/BindPhonePage'));
-const SsoCallbackPage = lazy(() => import('@/pages/auth/SsoCallbackPage'));
-const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage'));
 const SecurityPage = lazy(() => import('@/pages/account/SecurityPage'));
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
 const PosPage = lazy(() => import('@/pages/pos/PosPage'));
@@ -44,16 +41,6 @@ export default function AppRouter() {
           element={
             <PublicOnlyGuard>
               <LoginPage />
-            </PublicOnlyGuard>
-          }
-        />
-        <Route path="/auth/sso/callback" element={<SsoCallbackPage />} />
-        <Route path="/auth/bind-phone" element={<BindPhonePage />} />
-        <Route
-          path="/auth/reset-password"
-          element={
-            <PublicOnlyGuard>
-              <ResetPasswordPage />
             </PublicOnlyGuard>
           }
         />
@@ -89,4 +76,3 @@ export default function AppRouter() {
     </Suspense>
   );
 }
-

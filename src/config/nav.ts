@@ -8,7 +8,6 @@ import {
   Users,
   Store,
   BarChart3,
-  Settings,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -158,6 +157,3 @@ export const modules: NavModule[] = [
     groups: [{ label: '报表', items: [{ key: 'all', label: '经营报表', path: '/report' }] }],
   },
 ];
-
-// TODO: route not yet defined for /settings
-export const settingsItem = { key: 'settings', label: '设置', icon: Settings, path: '/settings' };

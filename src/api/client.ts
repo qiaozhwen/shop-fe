@@ -1,10 +1,22 @@
-import axios, { type AxiosError, type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios';
+import axios, {
+  type AxiosError,
+  type AxiosRequestConfig,
+  type InternalAxiosRequestConfig,
+} from 'axios';
 import { toast } from 'sonner';
 import { mockAdapter } from './mock';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toastAuthError } from '@/lib/auth-error';
 
 const useMock = (import.meta.env.VITE_USE_MOCK ?? 'true') !== 'false';
+const apiPrefix = import.meta.env.VITE_API_PREFIX || '';
+
+function shouldPrefixApi(url?: string) {
+  if (!apiPrefix || !url) return false;
+  return (
+    url.startsWith('/') && !url.startsWith(`${apiPrefix}/`) && url !== apiPrefix
+  );
+}
 
 declare module 'axios' {
   export interface AxiosRequestConfig {
@@ -25,6 +37,10 @@ const client = axios.create({
 
 // ── 请求拦截器：注入 access token（除非显式 useBindToken / isRefresh） ──
 client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  if (!useMock && shouldPrefixApi(config.url)) {
+    config.url = `${apiPrefix}${config.url}`;
+  }
+
   if (!config.useBindToken && !config.isRefresh) {
     const token = useAuthStore.getState().accessToken;
     if (token && !config.headers.Authorization) {
@@ -116,7 +132,10 @@ client.interceptors.response.use(
       }
 
       toast.error('登录已过期，请重新登录');
-      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      if (
+        typeof window !== 'undefined' &&
+        window.location.pathname !== '/login'
+      ) {
         window.location.href = '/login';
       }
       return Promise.reject(error);
