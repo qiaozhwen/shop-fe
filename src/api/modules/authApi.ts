@@ -22,7 +22,7 @@ import type {
 
 export const authApi = {
   loginWithPassword: (body: PasswordLoginDTO) =>
-    client.post<unknown, LoginResponse>('/api/admin/auth/login', body),
+    client.post<unknown, LoginResponse>('/api/auth/login', body),
 
   sendSms: (body: SmsSendDTO) =>
     client.post<unknown, SmsSendResult>('/api/admin/auth/sms/send', body),

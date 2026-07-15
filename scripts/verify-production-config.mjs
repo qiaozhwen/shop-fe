@@ -28,6 +28,7 @@ requireMatch('Dockerfile', /^HEALTHCHECK /m, 'frontend image must expose a conta
 forbidMatch('deploy/README.md', /后续接入后端时/, 'handoff documentation must describe the active backend integration');
 
 forbidMatch('src/pages/login/LoginPage.tsx', /演示|我已扫码|短信验证码|扫码登录|13800000000|MOCK_CODE/, 'demo, SMS, and SSO login UI must not ship');
+requireMatch('src/api/modules/authApi.ts', /client\.post<unknown, LoginResponse>\('\/api\/auth\/login', body\)/, 'password login must use the canonical public endpoint');
 forbidMatch('src/pages/account/SecurityPage.tsx', /SetFirstPasswordForm|BindList|sendSms|第三方登录|短信验证码/, 'unsupported SMS/SSO account controls must not ship');
 requireMatch('src/pages/dashboard/DashboardPage.tsx', /useProcessingTasks\(\{ pageSize: 5, active: true \}\)/, 'dashboard processing queue must request active tasks from the backend');
 requireMatch('src/pages/dashboard/DashboardPage.tsx', /const lowStockCount = data\.lowStockCount;/, 'dashboard low-stock KPI must use the complete backend summary');
